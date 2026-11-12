@@ -1,0 +1,56 @@
+name: 수집 시트 동기화
+
+# 매일 아침 6시(한국 시간)에 팀 수집 시트를 읽어 화면 데이터를 다시 만들고, 바뀐 게 있으면 커밋합니다.
+# Actions 탭 → "수집 시트 동기화" → Run workflow 로 바로 돌릴 수도 있어요.
+on:
+  schedule:
+    - cron: '7 21 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-data
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      # 레포 Settings → Secrets and variables → Actions 에 등록
+      GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+      KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 패키지 설치
+        run: pip install -r scripts/requirements.txt
+
+      - name: 시트 읽기 (서비스 계정 키가 없으면 건너뜀)
+        if: env.GOOGLE_SERVICE_ACCOUNT_JSON != ''
+        run: python scripts/sync_sheet.py --api
+
+      - name: 식당 좌표 찾기 (카카오 키가 없으면 건너뜀)
+        if: env.KAKAO_REST_API_KEY != ''
+        run: python scripts/geocode.py
+
+      # 검증에 실패하면 여기서 멈추고 커밋하지 않아요 → 사이트는 마지막 정상 데이터 유지
+      - name: 화면 데이터 만들기·검증
+        run: python scripts/build_data.py
+
+      - name: 바뀐 데이터 커밋
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add localo.json data/regions.json data/places.json data/geocode-cache.json
+          if git diff --cached --quiet; then
+            echo "바뀐 데이터 없음"
+            exit 0
+          fi
+          git commit -m "data: 수집 시트 동기화"
+          git push

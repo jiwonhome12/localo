@@ -24,6 +24,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .top{position:relative;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
 .top-in{display:flex;align-items:center;gap:28px;height:var(--top);padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:19px;letter-spacing:-.02em;white-space:nowrap}
+button.brand{border:0;background:none;padding:0;margin:0;color:inherit;font-family:inherit;line-height:inherit;text-align:left;cursor:pointer;border-radius:8px}
+button.brand:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .brand svg{width:30px;height:32px}
 .brand small{font-weight:500;font-size:12px;color:var(--muted);letter-spacing:0}
 .nav{display:flex;gap:4px}

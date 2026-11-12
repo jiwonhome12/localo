@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<title>로컬로</title>
+<meta name="description" content="반값여행 지역의 신청 일정·식당·숙박·카페를 한 지도에서 보고 여행 경비와 환급액을 미리 계산하는 웹앱">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="로컬로">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<script>document.body.dataset.sheet="peek"</script>
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <svg viewBox="40 20 370 490" aria-hidden="true"><path d="M48 38H212V272H92V458H232V502H48V228H168V82H48Z" fill="#2f5d50"/><path d="M208 28H402V482H358V262H228V218H358V72H208Z" fill="#7fa597"/></svg>
+      로컬로 <small>반값여행 지역 지도</small>
+    </div>
+    <nav class="nav" aria-label="주 메뉴">
+      <button type="button" aria-current="page">지역 지도</button>
+      <button type="button" data-soon="축제 캘린더">축제 캘린더</button>
+      <button type="button" data-tab="ai">AI 코스 추천</button>
+      <button type="button" data-soon="반값여행 안내">반값여행 안내</button>
+    </nav>
+    <div class="top-right">지역 상태 확인일 <span id="checked">-</span></div>
+  </div>
+</header>
+
+<main class="shell">
+  <aside class="panel left" id="sheet" aria-label="지역과 장소">
+    <button class="sheet-handle" id="handle" type="button" aria-label="목록 펼치기"></button>
+    <div class="p-scroll" id="left"></div>
+    <div class="tray" id="tray"></div>
+  </aside>
+
+  <section class="mapwrap" id="mapwrap" aria-label="반값여행 지역 지도">
+    <svg class="map-svg" id="svg" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <g id="g-prov" class="layer-fade"></g>
+      <g id="g-munis" class="layer-fade"></g>
+      <g id="g-targets" class="layer-fade"></g>
+      <g id="g-deco" class="layer-fade"></g>
+      <g id="g-route"></g>
+      <path id="morph" class="morph" d=""/>
+    </svg>
+    <div class="overlay" id="overlay"></div>
+    <div class="map-top" id="maptop"></div>
+    <div class="map-foot">
+      <div class="cap" id="cap"><b>ㄹ</b> + <b>ㅋ</b> = 로컬로 · <span class="star">★</span> 디지털 관광주민증 혜택</div>
+      <div class="grow"></div>
+      <span class="credit">경계: 통계청 센서스용 행정구역경계</span>
+      <button class="replay" id="replay" type="button">ㄹㅋ 다시 보기</button>
+    </div>
+  </section>
+
+  <aside class="panel right" id="trip" aria-label="여행 경비 계산">
+    <div class="trip-head">내 여행 <button type="button" id="tripClose">지도로</button></div>
+    <div class="p-scroll">
+      <p class="p-title">내 여행 스택</p>
+      <div class="form">
+        <div class="field"><label for="d1">가는 날</label><input id="d1" type="date" value="2026-11-21"></div>
+        <div class="field"><label for="d2">오는 날</label><input id="d2" type="date" value="2026-11-22"></div>
+        <div class="field"><label id="pplLabel">인원</label>
+          <div class="stepper" role="group" aria-labelledby="pplLabel"><button type="button" id="pm" aria-label="인원 줄이기">−</button><span class="num" id="pp">2명</span><button type="button" id="pl" aria-label="인원 늘리기">+</button></div>
+        </div>
+        <div class="field"><label id="modeLabel">지원 유형</label>
+          <div class="seg" id="mode" role="group" aria-labelledby="modeLabel">
+            <button type="button" data-m="normal" aria-pressed="true">일반</button>
+            <button type="button" data-m="youth" aria-pressed="false">청년</button>
+            <button type="button" data-m="family" aria-pressed="false">가족</button>
+          </div>
+        </div>
+      </div>
+      <div class="bar" id="bar"></div>
+      <div class="bar-l" id="barl"></div>
+      <div class="stack" id="stack"></div>
+      <div class="route" id="route"></div>
+    </div>
+    <div class="sum" id="sum"></div>
+  </aside>
+</main>
+
+<nav class="tabbar" aria-label="앱 메뉴">
+  <button type="button" aria-current="page" data-tab="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg>지도</button>
+  <button type="button" data-soon="축제 캘린더"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>축제</button>
+  <button type="button" data-tab="ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2"/><circle cx="12" cy="12" r="3"/></svg>AI 코스</button>
+  <button type="button" data-tab="trip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M5 8h14l-1.2 11a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>내 여행<span class="badge num" id="badge" hidden>0</span></button>
+</nav>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/flubber@0.4.2/build/flubber.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

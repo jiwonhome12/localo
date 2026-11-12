@@ -1,0 +1,127 @@
+{
+ "hwacheon": {
+  "name": "화천군",
+  "tour_resident_card": false,
+  "half": "2026-하반기 신규"
+ },
+ "pyeongchang": {
+  "name": "평창군",
+  "tour_resident_card": true,
+  "half": "2026-상반기부터"
+ },
+ "hoengseong": {
+  "name": "횡성군",
+  "tour_resident_card": false,
+  "half": "2026-상반기부터"
+ },
+ "yeongwol": {
+  "name": "영월군",
+  "tour_resident_card": true,
+  "half": "2026-상반기부터"
+ },
+ "jecheon": {
+  "name": "제천시",
+  "tour_resident_card": true,
+  "half": "2026-상반기부터"
+ },
+ "taean": {
+  "name": "태안군",
+  "tour_resident_card": true,
+  "half": "2026-하반기 신규"
+ },
+ "seocheon": {
+  "name": "서천군",
+  "tour_resident_card": false,
+  "half": "2026-하반기 신규"
+ },
+ "andong": {
+  "name": "안동시",
+  "tour_resident_card": true,
+  "half": "2026-하반기 신규"
+ },
+ "yeongcheon": {
+  "name": "영천시",
+  "tour_resident_card": false,
+  "half": "2026-하반기 신규"
+ },
+ "geochang": {
+  "name": "거창군",
+  "tour_resident_card": true,
+  "half": "2026-상반기부터"
+ },
+ "hamyang": {
+  "name": "함양군",
+  "tour_resident_card": true,
+  "half": "2026-하반기 신규"
+ },
+ "hapcheon": {
+  "name": "합천군",
+  "tour_resident_card": true,
+  "half": "2026-상반기부터"
+ },
+ "sancheong": {
+  "name": "산청군",
+  "tour_resident_card": true,
+  "half": "2026-하반기 신규"
+ },
+ "hadong": {
+  "name": "하동군",
+  "tour_resident_card": true,
+  "half": "2026-상반기부터"
+ },
+ "miryang": {
+  "name": "밀양시",
+  "tour_resident_card": true,
+  "half": "2026-상반기부터"
+ },
+ "goseong": {
+  "name": "고성군",
+  "tour_resident_card": false,
+  "half": "2026-하반기 신규"
+ },
+ "namhae": {
+  "name": "남해군",
+  "tour_resident_card": false,
+  "half": "2026-상반기부터"
+ },
+ "gochang": {
+  "name": "고창군",
+  "tour_resident_card": true,
+  "half": "2026-상반기부터"
+ },
+ "yeonggwang": {
+  "name": "영광군",
+  "tour_resident_card": true,
+  "half": "2026-상반기부터"
+ },
+ "yeongam": {
+  "name": "영암군",
+  "tour_resident_card": true,
+  "half": "2026-상반기부터"
+ },
+ "jangheung": {
+  "name": "장흥군",
+  "tour_resident_card": true,
+  "half": "2026-하반기 신규"
+ },
+ "gangjin": {
+  "name": "강진군",
+  "tour_resident_card": true,
+  "half": "2026-상반기부터"
+ },
+ "haenam": {
+  "name": "해남군",
+  "tour_resident_card": true,
+  "half": "2026-상반기부터"
+ },
+ "goheung": {
+  "name": "고흥군",
+  "tour_resident_card": true,
+  "half": "2026-상반기부터"
+ },
+ "wando": {
+  "name": "완도군",
+  "tour_resident_card": true,
+  "half": "2026-상반기부터"
+ }
+}

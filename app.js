@@ -14,11 +14,6 @@
     ['data/geo.json', 'data/regions.json', 'data/places.json'].map((u) => fetch(u).then((r) => r.json()))
   );
 
-  const ICON = {
-    open: '<svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="2" width="12" height="12" rx="3"/><path d="M5.5 10.5l.4-1.8L10 4.6l1.4 1.4-4.1 4.1z" stroke-linejoin="round"/></svg>',
-    soon: '<svg class="ic" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M8 4.5V8l2.3 1.4" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>',
-    closed: '<svg class="ic" viewBox="0 0 16 16" fill="currentColor"><rect x="3" y="7" width="10" height="7.5" rx="2"/><path d="M5.2 7V5.4a2.8 2.8 0 0 1 5.6 0V7" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
-  };
   const STL = { open: '신청접수중', soon: '준비중', closed: '마감' };
   const CAT = {
     food: { n: '식당', c: 'var(--c-food)', k: '식' }, stay: { n: '숙박', c: 'var(--c-stay)', k: '숙' },
@@ -41,7 +36,10 @@
   const el = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
   const targetCodes = new Set(R.map((r) => r.code));
   GEO.munis.forEach((m) => { if (!targetCodes.has(m.code)) $('g-munis').appendChild(el('path', { d: m.d, class: 'muni' })); });
-  GEO.provinces.forEach((p) => $('g-prov').appendChild(el('path', { d: p.d, class: 'prov' })));
+  GEO.provinces.forEach((p) => {
+    $('g-shadow').appendChild(el('path', { d: p.d, class: 'shadow' })); // 땅 아래 살짝 어긋난 그림자 → 종이를 오려 붙인 느낌
+    $('g-prov').appendChild(el('path', { d: p.d, class: 'prov' }));
+  });
   // 마감 → 준비중 → 접수중 순으로 그려 접수중 지역이 위에 오게
   const ORDER = { closed: 0, soon: 1, open: 2 };
   [...R].sort((a, b) => ORDER[a.status] - ORDER[b.status]).forEach((r) => { const p = el('path', { d: r.d, class: 'target st-' + r.status, 'data-r': r.id }); $('g-targets').appendChild(p); r.el = p; });
@@ -85,7 +83,7 @@
         if (S.filter !== 'all' && r.status !== S.filter) return;
         const d = (2.15 + i * 0.03).toFixed(2);
         h += `<span class="pdot ${r.status}" data-r="${r.id}" style="animation-delay:${d}s"></span>`;
-        h += `<button type="button" class="pin hit ${r.status}" data-r="${r.id}" style="animation-delay:${d}s" aria-label="${r.name} ${STL[r.status]}">${ICON[r.status]}${r.short}${r.tour_resident_card ? '<sup>★</sup>' : ''}</button>`;
+        h += `<button type="button" class="pin hit ${r.status}" data-r="${r.id}" style="animation-delay:${d}s" aria-label="${r.name} ${STL[r.status]}"><span class="pd"></span>${r.short}${r.tour_resident_card ? '<sup>★</sup>' : ''}</button>`;
       });
     } else {
       const r = RM[S.rid];
@@ -155,7 +153,7 @@
     const rows = p.sample
       ? `<dt>가격</dt><dd>${esc(p.price_text)}</dd><dt>접근성</dt><dd>${esc(p.access_text)}</dd>`
       : `<dt>대표 메뉴</dt><dd>${esc(p.price_text)}</dd><dt>주소</dt><dd>${esc(p.address || p.access_text)}</dd>
-         ${p.rating ? `<dt>평점</dt><dd>${esc(p.rating)}</dd>` : ''}${p.reason ? `<dt>추천</dt><dd>${esc(p.reason)}</dd>` : ''}
+
          <dt>가맹점</dt><dd>${p.merchant === '예' ? '지역화폐 가맹점' : p.merchant === '아니오' ? '<b class="warn">가맹점 아님 · 환급 제외</b>' : '<span class="warn">확인 전</span>'}</dd>`;
     const notes = p.sample ? '장소·가격은 화면 설계용 예시입니다.'
       : [p.approx ? '지도 위치는 지역 안 근사 위치예요.' : '', p.merchant !== '예' ? '반값여행 환급은 지역화폐 가맹점 결제만 인정돼요.' : ''].filter(Boolean).join(' ');
@@ -435,7 +433,7 @@
 
   /* ───────── 인트로: ㄹ·ㅋ가 양쪽에서 날아와 붙고 → 한반도 윤곽으로 변형 ───────── */
   const morph = $('morph');
-  const layers = [$('g-prov'), $('g-munis'), $('g-targets'), $('g-deco')];
+  const layers = [$('g-shadow'), $('g-prov'), $('g-munis'), $('g-targets'), $('g-deco')];
   function glyphs() {
     // 본토 외곽선의 경계 상자에 ㄹ(서쪽)·ㅋ(동쪽)을 맞춘다
     const tmp = el('path', { d: GEO.mainland }); svg.appendChild(tmp); const b = tmp.getBBox(); tmp.remove();
@@ -455,7 +453,7 @@
     if (reduce || !window.flubber) { morph.setAttribute('d', ''); layers.forEach((l) => (l.style.opacity = 1)); wrap.classList.remove('intro'); return; }
     const [gR, gK] = glyphs();
     const interp = flubber.combine([gR, gK], GEO.mainland, { single: true, maxSegmentLength: 5 });
-    const ACC = [47, 93, 80], LAND = [225, 231, 228];
+    const ACC = [47, 93, 80], LAND = [255, 255, 255];
     const mix = (k) => 'rgb(' + ACC.map((v, i) => Math.round(v + (LAND[i] - v) * k)).join(',') + ')';
     const ease = (k) => 1 - Math.pow(1 - k, 3), easeIO = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
     layers.forEach((l) => { l.style.transition = 'none'; l.style.opacity = 0; });

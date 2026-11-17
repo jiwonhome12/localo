@@ -20,7 +20,7 @@ jobs:
     env:
       # 레포 Settings → Secrets and variables → Actions 에 등록
       GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
-      KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+      VWORLD_API_KEY: ${{ secrets.VWORLD_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -35,8 +35,8 @@ jobs:
         if: env.GOOGLE_SERVICE_ACCOUNT_JSON != ''
         run: python scripts/sync_sheet.py --api
 
-      - name: 식당 좌표 찾기 (카카오 키가 없으면 건너뜀)
-        if: env.KAKAO_REST_API_KEY != ''
+      - name: 식당 좌표 찾기 (브이월드 키가 없으면 건너뜀)
+        if: env.VWORLD_API_KEY != ''
         run: python scripts/geocode.py
 
       # 검증에 실패하면 여기서 멈추고 커밋하지 않아요 → 사이트는 마지막 정상 데이터 유지

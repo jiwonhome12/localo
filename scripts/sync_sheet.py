@@ -61,6 +61,11 @@ def records(rows):
         yield number, {h: (row[i] if i < len(row) else None) for i, h in enumerate(headers) if h}
 
 
+# 다른 서비스(맛플 등)의 평점·리뷰 수·소개 문구는 공개 저장소와 화면에 옮기지 않는다.
+# 시트에 적어 두더라도 여기서 버려 localo.json에 남지 않게 한다.
+DROP_PLACE_FIELDS = {'평점·후기 출처', '선정 이유'}
+
+
 def build_payload(tabs, source):
     regions = []
     for row, fields in records(tabs[REGION_TAB]):
@@ -74,6 +79,7 @@ def build_payload(tabs, source):
             continue
         if fields.get('지자체') not in region_ids:
             raise ValueError(f"식당 탭 {row}행: 신청·환급 탭에 없는 지자체 '{fields.get('지자체')}'")
+        fields = {k: v for k, v in fields.items() if k not in DROP_PLACE_FIELDS}
         key = '|'.join(str(fields.get(name) or '') for name in ['지자체', '식당명', '주소'])
         places.append({'id': hashlib.sha256(key.encode()).hexdigest()[:16],
                        'regionId': fields['지자체'], 'sourceRow': row, 'fields': fields,

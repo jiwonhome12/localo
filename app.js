@@ -406,15 +406,43 @@
     if (S.view !== 'all') goHome(); else if (S.pid) { S.pid = null; renderLeft(); renderOverlay(); }
   }
   addEventListener('popstate', (e) => { if (e.state) restore(e.state); });
-  // 홈 화면에 추가한 앱(standalone)은 브라우저 뒤로가기 제스처가 없어서 왼쪽 가장자리 스와이프를 직접 처리한다
-  if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+  // 로고: 어디에 있든 첫 화면(전국 지도 · 지도 탭)으로
+  function goMain() {
+    restoring = true; openTrip(false); restoring = false;
+    if (mobile()) setSheet('peek');
+    if (S.view !== 'all') return goHome();
+    S.pid = null; renderLeft(); renderOverlay(); record();
+  }
+  // 왼쪽 가장자리에서 오른쪽으로 밀면 이전 화면(탭)으로.
+  // 브라우저 자체 뒤로가기 제스처가 없는 곳(홈 화면 앱, 폰 목업 iframe)에서만 직접 처리한다 — 일반 브라우저는 기록(popstate)으로 같은 동작을 한다.
+  if (matchMedia('(display-mode: standalone)').matches || navigator.standalone || window.top !== window) {
+    const edge = document.createElement('div'); edge.className = 'edge-back'; edge.setAttribute('aria-hidden', 'true');
+    edge.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
+    document.body.appendChild(edge);
+    // 손가락은 touch 이벤트로(스크롤이 시작돼도 끊기지 않게), 마우스(데스크톱의 폰 목업)는 pointer 이벤트로 받는다
     let sw = null;
-    addEventListener('touchstart', (e) => { const t = e.touches[0]; sw = e.touches.length === 1 && t.clientX < 28 ? { x: t.clientX, y: t.clientY, t: Date.now() } : null; }, { passive: true });
-    addEventListener('touchend', (e) => {
-      if (!sw) return; const t = e.changedTouches[0], dx = t.clientX - sw.x, dy = Math.abs(t.clientY - sw.y);
-      if (dx > 70 && dy < dx * 0.6 && Date.now() - sw.t < 700) goBack();
-      sw = null;
-    }, { passive: true });
+    const start = (x, y) => { sw = x < 24 ? { x, y, t: Date.now() } : null; if (sw) edge.style.transition = 'none'; };
+    const move = (x, y) => {
+      if (!sw) return;
+      const k = Math.min(1, Math.max(0, x - sw.x) / 90);
+      edge.style.opacity = k; edge.style.transform = `translate(${-40 + 52 * k}px, ${y}px) translateY(-50%) scale(${0.6 + 0.4 * k})`;
+      edge.classList.toggle('ready', k >= 1);
+    };
+    const end = (x, y, ok) => {
+      if (!sw) return;
+      const dx = x - sw.x, dy = Math.abs(y - sw.y);
+      if (ok && dx > 70 && dy < dx * 0.7 && Date.now() - sw.t < 900) goBack();
+      edge.style.transition = ''; edge.style.opacity = 0; edge.classList.remove('ready'); sw = null;
+    };
+    const tp = (e) => e.changedTouches[0];
+    addEventListener('touchstart', (e) => { if (e.touches.length === 1) start(tp(e).clientX, tp(e).clientY); else sw = null; }, { passive: true });
+    addEventListener('touchmove', (e) => move(tp(e).clientX, tp(e).clientY), { passive: true });
+    addEventListener('touchend', (e) => end(tp(e).clientX, tp(e).clientY, true), { passive: true });
+    addEventListener('touchcancel', (e) => end(tp(e).clientX, tp(e).clientY, false), { passive: true });
+    const mouse = (f) => (e) => { if (e.pointerType === 'mouse') f(e); };
+    addEventListener('pointerdown', mouse((e) => start(e.clientX, e.clientY)));
+    addEventListener('pointermove', mouse((e) => move(e.clientX, e.clientY)));
+    addEventListener('pointerup', mouse((e) => end(e.clientX, e.clientY, true)));
   }
   function toggleCart(pid) {
     const i = S.cart.findIndex((c) => c.pid === pid);
@@ -452,7 +480,7 @@
     const t = e.target.closest('button'); if (!t) return;
     const d = t.dataset;
     if (d.r && !t.closest('svg')) return openRegion(d.r);
-    if (t.hasAttribute('data-back')) return goBack();
+    if (t.hasAttribute('data-logo')) return goMain();
     if (t.hasAttribute('data-home')) return goHome();
     if (d.f) { S.filter = d.f; renderLeft(); paintTargets(); renderOverlay(); return; }
     if (d.cat) { S.cat = d.cat; S.pid = null; renderTop(); renderLeft(); renderOverlay(); return record(); }

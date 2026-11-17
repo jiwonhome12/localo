@@ -297,3 +297,8 @@ body.zoomed .target.sel{fill:#fff;stroke:var(--accent);stroke-width:2px;filter:d
 .rinfo dt{color:var(--faint)}
 .rinfo dd{margin:0;color:var(--ink);word-break:keep-all;overflow-wrap:anywhere}
 .warn{color:var(--open);font-weight:600}
+
+/* 왼쪽 가장자리 스와이프 → 이전 화면 표시 */
+.edge-back{position:fixed;left:0;top:0;z-index:80;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--bg);color:var(--muted);box-shadow:0 4px 14px rgba(29,39,37,.18);opacity:0;pointer-events:none;transform:translate(-40px,50vh) translateY(-50%);transition:opacity .2s,transform .2s}
+.edge-back svg{width:20px;height:20px}
+.edge-back.ready{background:var(--accent);color:#fff}

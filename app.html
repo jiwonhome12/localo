@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="styles.css?v=20261117h">
+<link rel="stylesheet" href="styles.css?v=20261117i">
 </head>
 <body>
 <script>document.body.dataset.sheet="peek"</script>
@@ -22,7 +22,7 @@
   <div class="top-in">
     <button type="button" class="brand" data-logo aria-label="로컬로 · 첫 화면으로">
       <svg viewBox="40 20 370 490" aria-hidden="true"><path d="M48 38H212V272H92V458H232V502H48V228H168V82H48Z" fill="#2f5d50"/><path d="M208 28H402V482H358V262H228V218H358V72H208Z" fill="#7fa597"/></svg>
-      로컬로 <small>반값여행 지역 지도</small>
+      로컬로
     </button>
     <nav class="nav" aria-label="주 메뉴">
       <button type="button" aria-current="page" data-tab="map">지역 지도</button>
@@ -30,7 +30,7 @@
       <button type="button" data-tab="community">커뮤니티</button>
       <button type="button" data-soon="반값여행 안내">반값여행 안내</button>
     </nav>
-    <div class="top-right">지역 상태 확인일 <span id="checked">-</span></div>
+    <span id="checked" hidden>-</span>
     <div class="top-actions">
       <button type="button" class="ibtn" data-tab="trip" aria-label="장바구니"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M5 8h14l-1.2 11a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span class="badge num" id="badge" hidden>0</span></button>
       <button type="button" class="ibtn desk" data-tab="my" aria-label="마이"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></svg></button>
@@ -57,8 +57,7 @@
     <div class="overlay" id="overlay"></div>
     <div class="map-top" id="maptop"></div>
     <div class="map-foot">
-      <div class="cap" id="cap"><span class="star">★</span> 디지털 관광주민증 혜택</div>
-      <div class="grow"></div>
+            <div class="grow"></div>
       <span class="credit">경계: 통계청 센서스용 행정구역경계</span>
     </div>
   </section>
@@ -66,8 +65,7 @@
   <aside class="panel right" id="trip" aria-label="여행 경비 계산">
     <div class="trip-head">장바구니 <button type="button" data-tab="map">지도로</button></div>
     <div class="p-scroll">
-      <p class="p-title">장바구니 · 내 여행 스택</p>
-      <div class="form">
+            <div class="form">
         <div class="field"><label for="d1">가는 날</label><input id="d1" type="date" value="2026-11-21"></div>
         <div class="field"><label for="d2">오는 날</label><input id="d2" type="date" value="2026-11-22"></div>
         <div class="field"><label id="pplLabel">인원</label>
@@ -82,7 +80,6 @@
         </div>
       </div>
       <div class="bar" id="bar"></div>
-      <div class="bar-l" id="barl"></div>
       <div class="stack" id="stack"></div>
       <div class="cmp" id="cmp"></div>
       <div class="route" id="route"></div>
@@ -106,7 +103,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/flubber@0.4.2/build/flubber.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="cloud.js?v=20261117h"></script>
-<script src="app.js?v=20261117h"></script>
+<script src="cloud.js?v=20261117i"></script>
+<script src="app.js?v=20261117i"></script>
 </body>
 </html>

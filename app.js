@@ -108,7 +108,8 @@
         if (S.filter !== 'all' && r.status !== S.filter) return;
         const d = (2.55 + i * 0.03).toFixed(2);
         h += `<span class="pdot ${r.status}" data-r="${r.id}" style="animation-delay:${d}s"></span>`;
-        h += `<button type="button" class="pin hit ${r.status}" data-r="${r.id}" style="animation-delay:${d}s" aria-label="${r.name} ${STL[r.status]}"><span class="pd"></span>${r.short}${r.tour_resident_card ? '<sup>★</sup>' : ''}</button>`;
+        if (r.status === 'closed' && S.filter === 'all') return; // 깔끔하게: 마감 지역은 점만
+        h += `<button type="button" class="pin hit ${r.status}" data-r="${r.id}" style="animation-delay:${d}s" aria-label="${r.name} ${STL[r.status]}"><span class="pd"></span>${r.short}</button>`;
       });
     } else {
       const r = RM[S.rid];
@@ -180,17 +181,14 @@
       : `<dt>대표 메뉴</dt><dd>${esc(p.price_text)}</dd><dt>주소</dt><dd>${esc(p.address || p.access_text)}</dd>
 
          <dt>가맹점</dt><dd>${p.merchant === '예' ? '지역화폐 가맹점' : p.merchant === '아니오' ? '<b class="warn">가맹점 아님 · 환급 제외</b>' : '<span class="warn">확인 전</span>'}</dd>`;
-    const notes = p.sample ? '장소·가격은 화면 설계용 예시입니다.'
-      : [p.approx ? '지도 위치는 지역 안 근사 위치예요.' : '', p.merchant !== '예' ? '반값여행 환급은 지역화폐 가맹점 결제만 인정돼요.' : ''].filter(Boolean).join(' ');
     return `<div class="pop" data-p="${p.id}" role="dialog" aria-label="${esc(p.name)}">
       <button class="x" type="button" data-close aria-label="닫기">✕</button>
       <div class="cat-l" style="color:${CAT[p.category].c}">${CAT[p.category].n} · ${r.name}</div>
       <h3>${esc(p.name)}</h3>
-      <dl>${rows}
-      <dt>계산 단가</dt><dd class="num">${p.price ? won(p.price) + (p.category === 'stay' ? ' / 1박·객실' : ' / 1인') : '무료'}</dd></dl>
-      <div class="links"><a href="${map}" target="_blank" rel="noopener">카카오맵에서 보기</a>${safeUrl(p.source_url) ? `<a href="${safeUrl(p.source_url)}" target="_blank" rel="noopener">출처</a>` : ''}${p.category === 'stay' ? '<span>예약 링크 (제휴 연동 예정)</span>' : ''}</div>
+      <dl>${rows}</dl>
+      <div class="links"><a href="${map}" target="_blank" rel="noopener">카카오맵에서 보기</a>${safeUrl(p.source_url) ? `<a href="${safeUrl(p.source_url)}" target="_blank" rel="noopener">출처</a>` : ''}</div>
       <button class="btn${inCart ? ' added' : ''}" type="button" data-add="${p.id}">${inCart ? '담김 · 빼기' : '장바구니에 담기'}</button>
-      ${notes ? `<div class="ex">${notes}</div>` : ''}</div>`;
+      ${p.sample ? '<div class="ex">예시 장소</div>' : ''}</div>`;
   }
 
   /* ───────── 지도 상단 ───────── */
@@ -223,21 +221,20 @@
   function capText(k) { return k.cap_1 == null || k.cap_group == null ? '확인 필요' : `1인 ${won(k.cap_1)} · 2인 이상 ${won(k.cap_group)}`; }
   function minText(m) { return !m ? '확인 필요' : m.per_person ? `1인당 ${won(m.one)}` : m.one === m.group ? `${won(m.one)} 이상` : `1인 ${won(m.one)} · 2인 이상 ${won(m.group)}`; }
   function regionInfo(r) {
-    const k = r.rule, rows = [['현재 일정', r.round || r.period], ['사업 기간', r.period], ['환급 한도', `${capText(k)} (경비의 50%)`],
-      ['최소 소비', minText(k.min_spend)], ['청년·가족', brief(r.perks_text) || '확인 필요'], ['환급 수단', r.currency], ['사전신청', brief(r.apply)]];
-    return `<div class="src rinfo"><b>반값여행 신청 안내</b>
-      <dl>${rows.filter((x) => x[1]).map(([t, d]) => `<dt>${t}</dt><dd>${esc(d)}</dd>`).join('')}</dl>
-      확인일 ${esc(r.status_checked_at)} · 팀 수집 시트 기준, 최종 조건은 지자체 공고를 확인하세요.<br>
-      ${safeUrl(r.site) ? `<a href="${safeUrl(r.site)}" target="_blank" rel="noopener">${r.name} 신청 페이지 열기 ›</a>` : ''}</div>`;
+    const k = r.rule, dl = (rows) => `<dl>${rows.filter((x) => x[1]).map(([t, d]) => `<dt>${t}</dt><dd>${esc(d)}</dd>`).join('')}</dl>`;
+    // 깔끔하게: 꼭 필요한 3줄만 보이고 나머지는 '자세히'
+    return `<div class="src rinfo">${dl([['일정', r.round || r.period], ['환급 한도', capText(k)], ['최소 소비', minText(k.min_spend)]])}
+      <details class="more-info"><summary>자세히</summary>${dl([['사업 기간', r.period], ['청년·가족', brief(r.perks_text) || '확인 필요'], ['환급 수단', r.currency], ['사전신청', brief(r.apply)]])}
+      <p class="ex">${esc(r.status_checked_at)} 확인 · 최종 조건은 지자체 공고 기준${r.tour_resident_card ? ' · <span class="star">★</span> 관광주민증 혜택' : ''}</p></details>
+      ${safeUrl(r.site) ? `<a href="${safeUrl(r.site)}" target="_blank" rel="noopener">신청 페이지 ›</a>` : ''}</div>`;
   }
   function renderLeft() {
     const L = $('left');
     if (S.view === 'all') {
-      let h = `<p class="p-title">지역별 진행 현황${S.filter !== 'all' ? ` · ${STL[S.filter]}` : ''}</p>
-        <p class="note">예산 소진 시 조기 마감 · 상태는 ${$('checked').textContent} 확인 · 팀 수집 시트 기준</p>`;
+      let h = `<p class="p-title">반값여행 지역${S.filter !== 'all' ? ` · ${STL[S.filter]}` : ''}</p>`;
       SIDO_ORDER.forEach((sd) => {
         const rs = R.filter((r) => r.sido === sd && (S.filter === 'all' || r.status === S.filter)); if (!rs.length) return;
-        h += `<div class="rgroup">${sd}</div>` + rs.map((r) => `<button type="button" class="ritem" data-r="${r.id}"><span class="dot ${r.status}"></span><span class="nm">${r.name}</span>${r.tour_resident_card ? '<span class="star">★</span>' : ''}${r.half.includes('신규') ? '<span class="tag">하반기 신규</span>' : ''}${DB.alarms[r.id] ? '<span class="bell-on" title="신청 알림 받는 중">🔔</span>' : ''}<span class="st ${r.status}">${STL[r.status]}</span></button>`).join('');
+        h += `<div class="rgroup">${sd}</div>` + rs.map((r) => `<button type="button" class="ritem" data-r="${r.id}"><span class="dot ${r.status}"></span><span class="nm">${r.name}</span>${DB.alarms[r.id] ? '<span class="bell-on" title="신청 알림 받는 중">🔔</span>' : ''}<span class="st ${r.status}">${STL[r.status]}</span></button>`).join('');
       });
       L.innerHTML = h; return;
     }
@@ -247,8 +244,7 @@
     L.innerHTML = `<button type="button" class="back" data-home>← 전국 지도</button>
       <div class="rcard"><div class="sil">${silhouette(r)}</div>
         <div class="rc-main"><div class="rhead"><h2>${r.name}</h2><span class="pill ${r.status}">${STL[r.status]}</span>${alarmBtn(r)}</div>
-        <div class="rsub">${r.sido} · ${r.half.includes('신규') ? '하반기 신규 지역' : '상반기부터 운영'}${r.tour_resident_card ? ' · <span class="star">★</span> 관광주민증 혜택' : ''}</div></div></div>
-      <div class="facts">${geoFacts(r)}</div>
+        <div class="rsub">${r.sido}</div></div></div>
       ${regionInfo(r)}
       <div class="tabs" role="tablist">${cats.map(([k, n]) => `<button type="button" class="tab" role="tab" data-cat="${k}" aria-selected="${S.cat === k}">${n}</button>`).join('')}</div>
       <div>${ps.map((p) => `<button type="button" class="pitem${S.pid === p.id ? ' on' : ''}" data-p="${p.id}"><span class="pic" style="background:${CAT[p.category].c}">${CAT[p.category].k}</span><span><span class="nm">${esc(p.name.replace(r.short + ' ', ''))}</span><span class="sub">${p.price_text} · ${p.access_text}</span></span></button>`).join('')}</div>`;
@@ -353,19 +349,16 @@
     const byCat = { food: 0, stay: 0, cafe: 0, spot: 0 }, byR = {}; let total = 0;
     items.forEach((c) => { const p = PM[c.pid], a = lineCost(c).amt; byCat[p.category] += a; byR[p.region_id] = (byR[p.region_id] || 0) + a; total += a; });
     $('bar').innerHTML = total ? Object.entries(byCat).filter((e) => e[1]).map(([k, v]) => `<i style="width:${v / total * 100}%;background:${CAT[k].c}"></i>`).join('') : '';
-    $('barl').innerHTML = Object.entries(byCat).map(([k, v]) => `<span><span class="dot" style="background:${CAT[k].c}"></span>${CAT[k].n} <b class="num">${won(v)}</b></span>`).join('');
     let refund = 0, rg = '';
     Object.entries(byR).forEach(([rid, a]) => { const f = refundOf(rid, a); refund += f.v; rg += `${RM[rid].name} ${won(a)} → 환급 ${won(f.v)}${f.why ? ` (${f.why})` : ''}${RM[rid].status === 'closed' ? ' (현재 마감)' : ''}<br>`; });
     const only = Object.keys(byR).length === 1 ? refundOf(...Object.entries(byR)[0]) : null;
-    const sumLabel = only ? only.ru.label + (only.why ? ' · ' + only.why : '') : MODE[S.mode];
+    const sumLabel = only ? only.ru.label : MODE[S.mode];
     const n = nights(), scope = S.basket === 'all' ? '전체 바구니' : (RM[S.basket] ? RM[S.basket].name + ' 바구니' : '');
-    $('sum').innerHTML = `<div class="row"><span>${scope ? scope + ' · ' : ''}여행 기간</span><b class="num">${n}박 ${n + 1}일 · ${S.people}명</b></div>
-      <div class="row"><span>예상 경비 합계</span><b class="num">${won(total)}</b></div>
+    $('sum').innerHTML = `<div class="row"><span>${scope || '예상 경비'} · ${n}박 ${n + 1}일 ${S.people}명</span><b class="num">${won(total)}</b></div>
       <div class="row refund"><span>반값여행 환급 예상 (${sumLabel})</span><b class="num">− ${won(refund)}</b></div>
-      ${rg && Object.keys(byR).length > 1 ? `<div class="rg num">${rg}</div>` : ''}
       <div class="row total"><span>실제 부담 예상</span><b class="num">${won(total - refund)}</b></div>
       ${S.cart.length ? `<button type="button" class="btn save-trip" data-save-trip>이 여행 저장하기</button>` : ''}
-      <p class="fine">반값여행은 지역마다 따로 신청·정산하므로 바구니도 지역별로 나눠 계산합니다. 환급은 지역화폐 가맹점 결제만 인정되고 지역사랑상품권으로 지급되며, 비율·한도·최소 소비 금액은 해당 지자체 공고가 최종 기준입니다.</p>`;
+`;
     renderCompare();
   }
 
@@ -393,7 +386,9 @@
     const best = all[0], worst = all[all.length - 1];
     const cur = mine.length ? all.find((x) => x.rid === courseRid()) || null : null;
     const insight = !best ? '' : `<p class="cins"><b class="num">${won(spend)}</b>을 쓰면 <b>${RM[best.rid].name}</b>에서 환급 <b class="num">${won(best.refund)}</b>로 가장 많이 돌려받고${worst !== best && worst.pay > best.pay ? `, <b>${RM[worst.rid].name}</b>(환급 <span class="num">${won(worst.refund)}</span>)보다 <b class="num">${won(worst.pay - best.pay)}</b> 덜 내요.` : '.'}${cur && cur.rid !== best.rid && cur.pay > best.pay ? ` 지금 바구니 <b>${RM[cur.rid].name}</b>보다 <b class="num">${won(cur.pay - best.pay)}</b> 아낄 수 있어요.` : ''}</p>`;
-    box.innerHTML = `<div class="cmp-h"><b>지역별 비교</b><small>${S.people}명 · ${MODE[S.mode]} · 경비 ${won(spend)}</small></div>
+    const head = `<button type="button" class="cmp-h" data-cmp-open aria-expanded="${!!S.cmpOpen}"><b>지역별 비교</b>${best && !S.cmpOpen ? `<small>${RM[best.rid].name} 환급 최대 ${won(best.refund)}</small>` : ''}<span class="chev">${S.cmpOpen ? '−' : '+'}</span></button>`;
+    if (!S.cmpOpen) { box.innerHTML = head; return; }
+    box.innerHTML = `${head}
       ${real}
       <div class="cmp-sub"><span>같은 금액을 다른 지역에서 쓰면?</span><div class="seg mini2" role="group" aria-label="비교할 지역"><button type="button" data-cmp-f="avail" aria-pressed="${S.cmpF !== 'all'}">신청 가능</button><button type="button" data-cmp-f="all" aria-pressed="${S.cmpF === 'all'}">전체</button></div></div>
       ${insight}
@@ -404,7 +399,7 @@
           <span class="cbar" aria-hidden="true"><i class="p" style="width:${x.pay / max * 100}%"></i><i class="f" style="width:${x.refund / max * 100}%"></i></span>
           ${x.why && x.refund === 0 ? `<small class="cwhy">${esc(x.why)}</small>` : ''}</li>`; }).join('')}</ol>
       ${all.length > 5 ? `<button type="button" class="btn3 cmore" data-cmp-more>${S.cmpMore ? '접기' : `${all.length}곳 모두 보기`}</button>` : ''}
-      <p class="fine">막대: 진한 부분 = 실제 부담, 연한 부분 = 환급. 지금 장바구니 경비를 그대로 다른 지역에서 쓴다고 보고, 지역 공고의 환급 비율·한도·최소 소비만으로 계산했어요(장소 가격 데이터는 쓰지 않아요).</p>`;
+      <p class="fine">지금 경비를 그 지역에서 쓴다고 보고 환급 규칙으로만 계산했어요.</p>`;
   }
 
   /* ───────── 내 코스: 사용자가 정한 순서대로. '가까운 순'은 거리 계산(최근접 + 2-opt)으로 도와준다 ───────── */
@@ -446,17 +441,16 @@
   }
   function renderRoute() {
     const box = $('route'), rid = courseRid(), ids = courseIds(rid);
-    if (ids.length < 2) { box.innerHTML = `<div class="route-h"><b>내 코스 <small>한 지역에 장소 2곳 이상 담으면 순서를 정할 수 있어요</small></b></div>`; return; }
+    if (ids.length < 2) { box.innerHTML = `<div class="route-h"><b>내 코스 <small>한 지역에 2곳 이상 담으면 만들어져요</small></b></div>`; return; }
     let tot = 0;
     const li = ids.map((id, i) => { const p = PM[id]; const d = i ? km(PM[ids[i - 1]], p) : 0; tot += d;
       return `<li data-stop="${id}"><span class="grip" data-grip aria-hidden="true" title="끌어서 순서 바꾸기"><svg viewBox="0 0 12 16"><circle cx="3.5" cy="3" r="1.4"/><circle cx="8.5" cy="3" r="1.4"/><circle cx="3.5" cy="8" r="1.4"/><circle cx="8.5" cy="8" r="1.4"/><circle cx="3.5" cy="13" r="1.4"/><circle cx="8.5" cy="13" r="1.4"/></svg></span><span class="k">${i + 1}</span><span class="nm2">${esc(p.name)}</span><span class="leg num">${i ? '+' + d.toFixed(1) + 'km' : '출발'}</span>
         <span class="mv"><button type="button" data-mv="${id}" data-d="-1" aria-label="${esc(p.name)} 앞으로"${i ? '' : ' disabled'}>↑</button><button type="button" data-mv="${id}" data-d="1" aria-label="${esc(p.name)} 뒤로"${i < ids.length - 1 ? '' : ' disabled'}>↓</button></span></li>`; }).join('');
-    const approx = ids.some((id) => PM[id].approx || PM[id].sample);
     box.innerHTML = `<div class="route-h"><b>내 코스 · ${RM[rid].name} <small>직선 ${tot.toFixed(1)}km</small></b>
       <button type="button" class="btn2${S.route ? ' on' : ''}" data-route>${S.route ? '지도에서 끄기' : '지도에서 보기'}</button></div>
       <ol class="rsteps drag" id="rsteps">${li}</ol>
       <div class="rbtns"><button type="button" class="btn3" data-autosort>가까운 순으로 정렬</button><a class="btn3" href="${kakaoRoute(ids)}" target="_blank" rel="noopener">카카오맵 길찾기</a></div>
-      <p class="rnote">⠿를 끌어 놓거나 ↑↓로 원하는 순서를 정하면 그 순서대로 지도·길찾기에 반영돼요. 길찾기는 카카오맵 앱·웹으로 열려요(최대 6곳).${approx ? ' 지금은 일부 장소 위치가 근사값이라 길찾기 위치가 정확하지 않을 수 있어요.' : ''}</p>`;
+      <p class="rnote">⠿를 끌어서 순서를 바꿔요</p>`;
   }
   function drawRoute() {
     const g = $('g-route');
@@ -656,7 +650,7 @@
     const srv = (topRank || []).filter((x) => RM[x.rid] && x.count > 0), seen = new Set(srv.map((x) => x.rid));
     const pc = {}; allPosts().forEach((p) => { pc[p.rid] = (pc[p.rid] || 0) + 1; });
     const rest = R.filter((r) => !seen.has(r.id)).sort((a, b) => (pc[b.id] || 0) - (pc[a.id] || 0) || ORDER[b.status] - ORDER[a.status]);
-    return srv.concat(rest.map((r) => ({ rid: r.id, count: 0 }))).slice(0, 10);
+    return srv.concat(rest.map((r) => ({ rid: r.id, count: 0 }))).slice(0, 5);
   }
   function renderSearch() {
     const box = $('csr'); if (!box) return;
@@ -669,7 +663,7 @@
       return;
     }
     const top = topTen(), byCount = top.some((x) => x.count);
-    box.innerHTML = `<div class="top10"><div class="t10h"><b>지금 많이 찾는 지역 TOP 10</b><small>${byCount ? '검색 수 기준' : '검색이 쌓이기 전 · 글 수·신청 상태 순'}</small></div>
+    box.innerHTML = `<div class="top10"><div class="t10h"><b>많이 찾는 지역 TOP 5</b></div>
       <ol class="t10">${top.map((x, i) => `<li><button type="button" data-cs="${x.rid}" aria-pressed="${cFilter === x.rid}"><span class="n num">${i + 1}</span><span class="nm">${RM[x.rid].name}</span><small>${RM[x.rid].sido}</small></button></li>`).join('')}</ol></div>`;
   }
   function pickRegion(rid) {
@@ -739,10 +733,10 @@
       <div class="rbtns"><button type="button" class="btn" data-post>올리기</button><button type="button" class="btn3" data-write>취소</button></div></div>`;
     box.innerHTML = `<label class="sbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><input id="cq" type="search" placeholder="지역 검색 · 예: 거창, 경남" value="${esc(cq)}" autocomplete="off" enterkeyhint="search" aria-label="지역 검색"></label>
       <div id="csr"></div>
-      <div class="c-head">${cFilter !== 'all' ? `<p class="cfil"><span class="dot ${RM[cFilter].status}"></span><b>${RM[cFilter].name}</b> 글 ${list.length}개 <button type="button" class="x2" data-cs="all">전체 보기</button></p>` : `<p>다녀온 여행을 사진과 함께 나누고, 마음에 드는 코스는 장바구니에 바로 담아 보세요.</p>`}${writing ? '' : '<button type="button" class="btn" data-write>글쓰기</button>'}</div>
+      <div class="c-head">${cFilter !== 'all' ? `<p class="cfil"><span class="dot ${RM[cFilter].status}"></span><b>${RM[cFilter].name}</b> 글 ${list.length}개 <button type="button" class="x2" data-cs="all">전체 보기</button></p>` : '<p></p>'}${writing ? '' : '<button type="button" class="btn" data-write>글쓰기</button>'}</div>
       ${form}
       <div class="posts">${list.map(postHTML).join('') || '<p class="empty">아직 이 지역 글이 없어요. 첫 글을 남겨 보세요.</p>'}</div>
-      <p class="fine">${CLOUD ? '올린 글과 사진은 로컬로 사용자 모두에게 보여요. 예시 글은 화면 설계용이에요.' : '서버에 연결하지 못해 글이 이 기기에만 저장돼요.'}</p>`;
+      ${CLOUD ? '' : '<p class="fine">서버에 연결하지 못해 글이 이 기기에만 저장돼요.</p>'}`;
     renderSearch(); renderDraft();
   }
   async function postArticle(btn) {
@@ -791,7 +785,8 @@
     $('left').scrollTop = 0;
     record();
   }
-  function goHome() { S.view = 'all'; S.rid = null; S.pid = null; renderAll(); animateVB(VB0.slice(), 650, () => { layoutPins(); placeOverlay(); }); record(); }
+  // 전국 지도(메인)로 돌아올 때마다 ㄹㅋ 마크가 한반도로 바뀌는 인트로를 다시 보여 준다
+  function goHome() { S.view = 'all'; S.rid = null; S.pid = null; vb = VB0.slice(); svg.setAttribute('viewBox', vb.join(' ')); renderAll(); playIntro(); record(); }
 
   /* ───────── 화면 기록: 로고·뒤로가기 제스처로 직전 화면 복원 ───────── */
   let restoring = false;
@@ -827,7 +822,7 @@
     restoring = true; openPanel(null); restoring = false;
     if (mobile()) setSheet('peek');
     if (S.view !== 'all') return goHome();
-    S.pid = null; renderLeft(); renderOverlay(); record();
+    S.pid = null; renderLeft(); renderOverlay(); playIntro(); record();
   }
   // 왼쪽 가장자리에서 오른쪽으로 밀면 이전 화면(탭)으로.
   // 브라우저 자체 뒤로가기 제스처가 없는 곳(홈 화면 앱, 폰 목업 iframe)에서만 직접 처리한다 — 일반 브라우저는 기록(popstate)으로 같은 동작을 한다.
@@ -999,12 +994,13 @@
     if (d.delPost) { const id = d.delPost, gone = DB.posts.find((x) => x.id === id); DB.posts = DB.posts.filter((x) => x.id !== id); save(); cloud((c) => c.delPost(id, (gone && gone.images) || [])); return renderCommunity(); }
     if (d.m) { S.mode = d.m; document.querySelectorAll('#mode button').forEach((b) => b.setAttribute('aria-pressed', b === t)); renderStack(); return; }
     if (t.id === 'pm' || t.id === 'pl') return setPeople(S.people + (t.id === 'pl' ? 1 : -1));
+    if (t.hasAttribute('data-cmp-open')) { S.cmpOpen = !S.cmpOpen; return renderCompare(); }
     if (d.cmpF) { S.cmpF = d.cmpF; return renderCompare(); }
     if (t.hasAttribute('data-cmp-more')) { S.cmpMore = !S.cmpMore; return renderCompare(); }
     if (d.cmpR) { if (mobile()) { restoring = true; openPanel(null); restoring = false; } return openRegion(d.cmpR); }
     if (d.basket) { S.basket = d.basket; S.route = null; drawRoute(); renderStack(); renderRoute(); renderOverlay(); return; }
     if (t.hasAttribute('data-route')) return toggleRoute();
-    if (d.tab) return openPanel(d.tab === 'map' ? null : d.tab);
+    if (d.tab) { const was = S.panel; openPanel(d.tab === 'map' ? null : d.tab); if (d.tab === 'map' && was && was !== 'trip' && S.view === 'all') playIntro(); return; }
     if (d.soon) return toast(`${d.soon}은 다음 단계에서 열려요`);
   });
   // 커뮤니티 검색창: 글자를 칠 때마다 결과만 다시 그린다(입력창은 그대로 두어 포커스 유지)

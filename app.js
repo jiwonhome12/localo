@@ -465,9 +465,11 @@
         ${!CLOUD ? `<label class="fld"><span>닉네임</span><input id="loginName" maxlength="12" placeholder="예: 거창여행자" autocomplete="nickname"></label>
         <button type="button" class="btn" data-login>시작하기</button>
         <p class="fine">서버에 연결하지 못해 이 기기에만 저장하는 시제품 로그인으로 동작해요.</p>`
-        : linkSent ? `<div class="sent"><b>메일을 보냈어요</b><span>${esc(linkSent)}</span>메일함의 <b>로그인 링크</b>를 누르면 이 화면으로 돌아와 로그인돼요. 메일이 안 보이면 스팸함도 확인해 주세요.</div>
+        : linkSent ? `<div class="sent"><b>메일을 보냈어요</b><span>${esc(linkSent)}</span>메일 속 <b>숫자 코드</b>를 아래에 넣거나, 이 컴퓨터에서 <b>로그인 링크</b>를 누르세요. 메일이 안 보이면 스팸함도 확인해 주세요.</div>
+        <label class="fld"><span>메일 속 숫자 코드</span><input id="loginCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"></label>
+        <button type="button" class="btn" data-code-login>코드로 로그인</button>
         <button type="button" class="btn3" data-relink>다른 이메일로 받기</button>`
-        : `<label class="fld"><span>이메일</span><input id="loginEmail" type="email" inputmode="email" placeholder="you@example.com" autocomplete="email"></label>
+        : `${loginErr ? `<div class="lerr">${esc(loginErr)}</div>` : ''}<label class="fld"><span>이메일</span><input id="loginEmail" type="email" inputmode="email" placeholder="you@example.com" autocomplete="email"></label>
         <button type="button" class="btn" data-email-login>로그인 링크 받기</button>
         <p class="fine">비밀번호 없이 메일로 받은 링크를 누르면 로그인돼요. 처음이면 자동으로 가입돼요.</p>`}</div>`;
       return;
@@ -491,12 +493,20 @@
   }
 
   /* ───────── Supabase 로그인·동기화 ───────── */
-  let linkSent = '';
+  let linkSent = '', loginErr = CLOUD ? CLOUD.linkError() : '';
+  async function codeLogin(btn) {
+    const code = ($('loginCode').value || '').replace(/\D/g, '');
+    if (code.length < 6) { toast('메일 속 숫자 코드를 넣어 주세요'); return $('loginCode').focus(); }
+    btn.disabled = true; btn.textContent = '확인 중…';
+    try { await CLOUD.verifyCode(linkSent, code); }
+    catch (e) { console.warn(e); btn.disabled = false; btn.textContent = '코드로 로그인';
+      toast(/expired|invalid/i.test(e.message || '') ? '코드가 틀렸거나 만료됐어요. 최근 메일의 코드인지 확인해 주세요' : '로그인하지 못했어요. 잠시 후 다시 해 주세요'); }
+  }
   async function emailLogin(btn) {
     const email = ($('loginEmail').value || '').trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('이메일 주소를 확인해 주세요'); return $('loginEmail').focus(); }
     btn.disabled = true; btn.textContent = '보내는 중…';
-    try { await CLOUD.sendLink(email); linkSent = email; renderMy(); }
+    try { await CLOUD.sendLink(email); linkSent = email; loginErr = ''; renderMy(); setTimeout(() => $('loginCode') && $('loginCode').focus(), 50); }
     catch (e) { console.warn(e); btn.disabled = false; btn.textContent = '로그인 링크 받기';
       toast(/rate|seconds/i.test(e.message || '') ? '메일을 너무 자주 요청했어요. 잠시 후 다시 해 주세요' : '메일을 보내지 못했어요. 주소를 확인해 주세요'); }
   }
@@ -767,6 +777,7 @@
     if (d.delTrip) { const id = d.delTrip; DB.trips = DB.trips.filter((x) => x.id !== id); save(); cloud((c) => c.delTrip(id)); return renderMy(); }
     if (t.hasAttribute('data-email-login')) return emailLogin(t);
     if (t.hasAttribute('data-relink')) { linkSent = ''; return renderMy(); }
+    if (t.hasAttribute('data-code-login')) return codeLogin(t);
     if (t.hasAttribute('data-nick')) return saveNick(t);
     if (t.hasAttribute('data-login')) { const n = ($('loginName').value || '').trim(); if (!n) { toast('닉네임을 적어 주세요'); return $('loginName').focus(); } DB.user = { name: n, since: today() }; save(); renderMy(); renderLeft(); return toast(`${n}님, 반가워요`); }
     if (t.hasAttribute('data-logout')) { if (CLOUD) { CLOUD.signOut(); return; } DB.user = null; save(); renderMy(); return toast('로그아웃했어요'); }
@@ -883,6 +894,7 @@
   }
   setVB(VB0.slice()); renderAll(); playIntro();
   if (CLOUD) refreshCloud(); else checkAlarms();
+  if (loginErr) setTimeout(() => openPanel('my'), 400);
   history.replaceState({ ...snap(), i: 0 }, '');
 
   // 홈 화면 설치(PWA) — 지원되는 곳에서만

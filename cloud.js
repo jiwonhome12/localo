@@ -5,6 +5,7 @@
 (function () {
   const URL = 'https://urqfwgtlolssnejguitt.supabase.co';
   const KEY = 'sb_publishable_xlgNDKTMpVqP40j1xTfV8g_GzNiQDOj';
+  const START = { hash: location.hash || '', search: location.search || '' }; // 로그인 링크로 돌아온 값(라이브러리가 지우기 전에 보관)
   if (!window.supabase || !window.supabase.createClient) { window.LocaloCloud = null; return; }
   const sb = window.supabase.createClient(URL, KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
   const must = ({ data, error }) => { if (error) throw error; return data; };
@@ -28,6 +29,17 @@
     async sendLink(email) {
       const back = new window.URL('./', location.href.replace(/[?#].*$/, '')).href;
       must(await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: back } }));
+    },
+    // 메일 속 숫자 코드로 로그인(링크가 안 열릴 때·다른 기기에서 메일을 볼 때)
+    async verifyCode(email, token) { must(await sb.auth.verifyOtp({ email, token, type: 'email' })); },
+    // 로그인 링크로 돌아왔는데 실패한 경우(#error=…): 사람이 읽을 이유
+    linkError() {
+      const q = new window.URLSearchParams(START.hash.replace(/^#/, '') + '&' + START.search.replace(/^\?/, ''));
+      const code = q.get('error_code') || q.get('error');
+      if (!code) return '';
+      history.replaceState(null, '', location.pathname);
+      if (/expired/.test(code)) return '로그인 링크가 만료됐거나 이미 사용됐어요. 일부 메일 서비스는 보안 검사로 링크를 미리 열어 버려요. 메일 속 숫자 코드로 로그인해 주세요.';
+      return '로그인 링크를 확인하지 못했어요(' + code + '). 메일 속 숫자 코드로 로그인해 주세요.';
     },
     async signOut() { await sb.auth.signOut(); me = null; },
     async profile() { return must(await sb.from('profiles').select('nickname, created_at').eq('id', me).maybeSingle()); },

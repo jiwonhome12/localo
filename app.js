@@ -28,7 +28,13 @@
   const placesOf = (rid) => PLACES.filter((p) => p.region_id === rid);
   $('checked').textContent = (REG[0].status_checked_at || '').split(' ')[0];
 
-  const VB0 = GEO.viewBox.slice();
+  // 본토가 화면 가로 가운데에 오도록 보기 영역을 좌우 대칭으로 넓힌다(동쪽 울릉도·독도 상자도 그대로 보이게)
+  const VB0 = (() => {
+    const tmp = document.createElementNS(NS, 'path'); tmp.setAttribute('d', GEO.mainland); svg.appendChild(tmp);
+    const b = tmp.getBBox(); tmp.remove();
+    const [x, y, w, h] = GEO.viewBox, cx = b.x + b.width / 2, half = Math.max(cx - x, x + w - cx) + 6;
+    return [cx - half, y, half * 2, h];
+  })();
   let vb = VB0.slice();
   const S = { view: 'all', rid: null, cat: 'all', pid: null, filter: 'all', people: 2, mode: 'normal', cart: [], route: null, basket: 'all' };
 
@@ -81,7 +87,7 @@
     if (S.view === 'all') {
       R.forEach((r, i) => {
         if (S.filter !== 'all' && r.status !== S.filter) return;
-        const d = (2.15 + i * 0.03).toFixed(2);
+        const d = (2.55 + i * 0.03).toFixed(2);
         h += `<span class="pdot ${r.status}" data-r="${r.id}" style="animation-delay:${d}s"></span>`;
         h += `<button type="button" class="pin hit ${r.status}" data-r="${r.id}" style="animation-delay:${d}s" aria-label="${r.name} ${STL[r.status]}"><span class="pd"></span>${r.short}${r.tour_resident_card ? '<sup>★</sup>' : ''}</button>`;
       });
@@ -502,17 +508,34 @@
   ['d1', 'd2'].forEach((id) => $(id).addEventListener('change', () => { renderStack(); renderRoute(); }));
   new ResizeObserver(() => { if (S.view === 'all') { vb = VB0.slice(); svg.setAttribute('viewBox', vb.join(' ')); layoutPins(); } else setVB(fitBox(RM[S.rid].bbox)); placeOverlay(); }).observe(wrap);
 
-  /* ───────── 인트로: ㄹ·ㅋ가 양쪽에서 날아와 붙고 → 한반도 윤곽으로 변형 ───────── */
+  /* ───────── 인트로: 가운데 둥근 ㄹㅋ 마크 → 한반도 윤곽으로 부풀어 변형 ───────── */
   const morph = $('morph');
   const layers = [$('g-shadow'), $('g-prov'), $('g-munis'), $('g-targets'), $('g-deco')];
+  // 모서리를 둥글게 깎은 다각형(각 꼭짓점을 2차 곡선으로 이어 붓으로 쓴 듯 부드럽게)
+  function roundPoly(pts, r, seg = 7) {
+    const out = [], n = pts.length;
+    for (let i = 0; i < n; i++) {
+      const P = pts[i], A = pts[(i + n - 1) % n], B = pts[(i + 1) % n];
+      const la = Math.hypot(A[0] - P[0], A[1] - P[1]), lb = Math.hypot(B[0] - P[0], B[1] - P[1]);
+      const rr = Math.min(r, la / 2, lb / 2);
+      const p0 = [P[0] + (A[0] - P[0]) / la * rr, P[1] + (A[1] - P[1]) / la * rr];
+      const p2 = [P[0] + (B[0] - P[0]) / lb * rr, P[1] + (B[1] - P[1]) / lb * rr];
+      for (let j = 0; j <= seg; j++) {
+        const t = j / seg, u = 1 - t;
+        out.push([u * u * p0[0] + 2 * u * t * P[0] + t * t * p2[0], u * u * p0[1] + 2 * u * t * P[1] + t * t * p2[1]]);
+      }
+    }
+    return out;
+  }
   function glyphs() {
-    // 본토 외곽선의 경계 상자에 ㄹ(서쪽)·ㅋ(동쪽)을 맞춘다
+    // 본토 한가운데에 작고 둥근 ㄹㅋ 마크(본토 높이의 38%)를 놓는다. 획 끝과 꺾임은 획 굵기의 절반으로 둥글려 알약처럼.
     const tmp = el('path', { d: GEO.mainland }); svg.appendChild(tmp); const b = tmp.getBBox(); tmp.remove();
-    const mapPt = (x, y) => [b.x + (x - 48) / 354 * b.width, b.y + (y - 28) / 474 * b.height];
-    const poly = (pts) => 'M' + pts.map(([x, y]) => mapPt(x, y).map((v) => v.toFixed(1)).join(' ')).join('L') + 'Z';
+    const h = b.height * 0.38, w = h * 354 / 474, x0 = b.x + b.width / 2 - w / 2, y0 = b.y + b.height * 0.47 - h / 2;
+    const mapPt = (x, y) => [x0 + (x - 48) / 354 * w, y0 + (y - 28) / 474 * h];
+    const poly = (pts) => 'M' + roundPoly(pts, 31, 9).map(([x, y]) => mapPt(x, y).map((v) => v.toFixed(2)).join(' ')).join('L') + 'Z';
     return [
-      poly([[48, 38], [212, 38], [212, 272], [92, 272], [92, 458], [232, 458], [232, 502], [48, 502], [48, 228], [168, 228], [168, 82], [48, 82]]),
-      poly([[208, 28], [402, 28], [402, 482], [358, 482], [358, 262], [228, 262], [228, 218], [358, 218], [358, 72], [208, 72]]),
+      poly([[48, 28], [236, 28], [236, 290], [110, 290], [110, 440], [240, 440], [240, 502], [48, 502], [48, 228], [174, 228], [174, 90], [48, 90]]),
+      poly([[214, 28], [402, 28], [402, 502], [340, 502], [340, 282], [228, 282], [228, 220], [340, 220], [340, 90], [214, 90]]),
     ];
   }
   let introRaf = null;
@@ -526,27 +549,29 @@
     const interp = flubber.combine([gR, gK], GEO.mainland, { single: true, maxSegmentLength: 5 });
     const ACC = [47, 93, 80], LAND = [255, 255, 255];
     const mix = (k) => 'rgb(' + ACC.map((v, i) => Math.round(v + (LAND[i] - v) * k)).join(',') + ')';
-    const ease = (k) => 1 - Math.pow(1 - k, 3), easeIO = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+    // 부드러운 움직임: 살짝 지나쳤다 돌아오는 도착(back-out), 사인 곡선 변형
+    const backOut = (k) => { const c = 1.35; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); };
+    const sine = (k) => -(Math.cos(Math.PI * k) - 1) / 2;
     layers.forEach((l) => { l.style.transition = 'none'; l.style.opacity = 0; });
-    const t0 = performance.now(), W = VB0[2];
+    const t0 = performance.now(), r0 = interp(0);
+    const tmp = el('path', { d: r0 }); svg.appendChild(tmp); const gb = tmp.getBBox(); tmp.remove();
+    const gcx = gb.x + gb.width / 2, gcy = gb.y + gb.height / 2;
+    const scaleAt = (k) => `translate(${gcx} ${gcy}) scale(${k}) translate(${-gcx} ${-gcy})`;
     const step = (t) => {
       const e = (t - t0) / 1000;
-      if (e < 0.95) { // 1) 양쪽에서 날아와 붙기
-        const k = ease(Math.min(1, e / 0.85)), off = (1 - k) * W * 0.45;
-        const r0 = interp(0); // 시작 모양(글자 둘)
-        morph.setAttribute('d', r0); morph.style.fill = mix(0); morph.style.opacity = Math.min(1, e / 0.3);
-        morph.setAttribute('transform', '');
-        const parts = r0.split('M').filter(Boolean);
-        const half = Math.ceil(parts.length / 2);
-        // 글자별로 반대 방향에서 들어오도록 두 조각을 따로 이동
-        morph.setAttribute('d', parts.map((p, i) => 'M' + p.replace(/(-?\d+\.?\d*)[ ,](-?\d+\.?\d*)/g, (m, x, y) => `${(+x + (i < half ? -off : off)).toFixed(1)} ${y}`)).join(''));
-      } else if (e < 2.25) { // 2) 한반도 모양으로 변형
-        const k = easeIO(Math.min(1, (e - 1.05) / 1.1)), kk = Math.max(0, k);
-        morph.setAttribute('d', interp(kk)); morph.style.fill = mix(kk); morph.style.opacity = 1;
-      } else { // 3) 실제 경계 지도로 교체
+      if (e < 0.9) { // 1) 가운데에서 둥근 ㄹㅋ 마크가 살짝 튀어 오르며 나타나기
+        const k = Math.min(1, e / 0.8);
+        morph.setAttribute('d', r0); morph.style.fill = mix(0); morph.style.opacity = Math.min(1, e / 0.35);
+        morph.setAttribute('transform', scaleAt(0.6 + 0.4 * backOut(k)));
+      } else if (e < 1.15) { // 2) 잠깐 머물기
+        morph.setAttribute('d', r0); morph.style.opacity = 1; morph.setAttribute('transform', '');
+      } else if (e < 2.55) { // 3) 한반도 모양으로 부풀어 오르며 녹아들기
+        const k = sine(Math.min(1, (e - 1.15) / 1.4));
+        morph.setAttribute('d', interp(k)); morph.style.fill = mix(k);
+      } else { // 4) 실제 경계 지도로 교체
         layers.forEach((l) => { l.style.transition = ''; l.style.opacity = 1; });
-        morph.style.transition = 'opacity .5s'; morph.style.opacity = 0;
-        setTimeout(() => { morph.setAttribute('d', ''); morph.style.transition = ''; }, 520);
+        morph.style.transition = 'opacity .6s'; morph.style.opacity = 0;
+        setTimeout(() => { morph.setAttribute('d', ''); morph.style.transition = ''; }, 620);
         setTimeout(() => wrap.classList.remove('intro'), 1400); // 핀 등장 애니메이션 끝나면 해제(다시 그릴 때 깜빡임 방지)
         return;
       }

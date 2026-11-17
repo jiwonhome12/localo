@@ -469,9 +469,12 @@
         <label class="fld"><span>메일 속 숫자 코드</span><input id="loginCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"></label>
         <button type="button" class="btn" data-code-login>코드로 로그인</button>
         <button type="button" class="btn3" data-relink>다른 이메일로 받기</button>`
-        : `${loginErr ? `<div class="lerr">${esc(loginErr)}</div>` : ''}<label class="fld"><span>이메일</span><input id="loginEmail" type="email" inputmode="email" placeholder="you@example.com" autocomplete="email"></label>
-        <button type="button" class="btn" data-email-login>로그인 링크 받기</button>
-        <p class="fine">비밀번호 없이 메일로 받은 링크를 누르면 로그인돼요. 처음이면 자동으로 가입돼요.</p>`}</div>`;
+        : `${loginErr ? `<div class="lerr">${esc(loginErr)}</div>` : ''}
+        <label class="fld"><span>이메일</span><input id="loginEmail" type="email" inputmode="email" placeholder="you@example.com" autocomplete="email"></label>
+        <label class="fld"><span>비밀번호 (6자 이상)</span><input id="loginPw" type="password" autocomplete="current-password" placeholder="••••••"></label>
+        <button type="button" class="btn" data-pw-login>로그인</button>
+        <button type="button" class="btn3" data-pw-signup>처음이에요 · 가입하기</button>
+        <button type="button" class="link small" data-email-login>비밀번호 없이 메일 링크로 로그인</button>`}</div>`;
       return;
     }
     if (!DB.user.name) { // 첫 로그인: 닉네임 정하기
@@ -501,6 +504,26 @@
     try { await CLOUD.verifyCode(linkSent, code); }
     catch (e) { console.warn(e); btn.disabled = false; btn.textContent = '코드로 로그인';
       toast(/expired|invalid/i.test(e.message || '') ? '코드가 틀렸거나 만료됐어요. 최근 메일의 코드인지 확인해 주세요' : '로그인하지 못했어요. 잠시 후 다시 해 주세요'); }
+  }
+  async function pwAuth(btn, signup) {
+    const email = ($('loginEmail').value || '').trim(), pw = $('loginPw').value || '';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('이메일 주소를 확인해 주세요'); return $('loginEmail').focus(); }
+    if (pw.length < 6) { toast('비밀번호는 6자 이상이에요'); return $('loginPw').focus(); }
+    const label = btn.textContent; btn.disabled = true; btn.textContent = signup ? '가입하는 중…' : '로그인 중…';
+    try {
+      if (signup) {
+        const r = await CLOUD.signUp(email, pw);
+        if (r.needConfirm) { linkSent = email; loginErr = ''; renderMy(); toast('확인 메일을 보냈어요. 메일의 링크를 누르면 가입이 끝나요'); return; }
+      } else await CLOUD.signIn(email, pw);
+    } catch (e) {
+      console.warn(e); btn.disabled = false; btn.textContent = label;
+      const m = e.message || '';
+      toast(/Invalid login/i.test(m) ? '이메일 또는 비밀번호가 맞지 않아요. 처음이면 가입하기를 눌러 주세요'
+        : /already registered|already been registered/i.test(m) ? '이미 가입한 이메일이에요. 로그인을 눌러 주세요'
+        : /not confirmed/i.test(m) ? '가입 확인 메일의 링크를 먼저 눌러 주세요'
+        : /rate|seconds/i.test(m) ? '너무 자주 시도했어요. 잠시 후 다시 해 주세요'
+        : /password/i.test(m) ? '비밀번호가 너무 약해요. 더 길게 만들어 주세요' : '로그인하지 못했어요. 잠시 후 다시 해 주세요');
+    }
   }
   async function emailLogin(btn) {
     const email = ($('loginEmail').value || '').trim();
@@ -776,6 +799,8 @@
     if (d.loadTrip) return loadTrip(d.loadTrip);
     if (d.delTrip) { const id = d.delTrip; DB.trips = DB.trips.filter((x) => x.id !== id); save(); cloud((c) => c.delTrip(id)); return renderMy(); }
     if (t.hasAttribute('data-email-login')) return emailLogin(t);
+    if (t.hasAttribute('data-pw-login')) return pwAuth(t, false);
+    if (t.hasAttribute('data-pw-signup')) return pwAuth(t, true);
     if (t.hasAttribute('data-relink')) { linkSent = ''; return renderMy(); }
     if (t.hasAttribute('data-code-login')) return codeLogin(t);
     if (t.hasAttribute('data-nick')) return saveNick(t);

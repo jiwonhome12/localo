@@ -436,3 +436,4 @@ body.my-open #page-my,body.community-open #page-community{display:flex}
 .login .btn3{width:100%}
 .lerr{text-align:left;font-size:12.5px;line-height:1.6;color:#9a3b12;background:var(--open-soft);border:1px solid #f3cfb3;border-radius:12px;padding:10px 12px;margin:12px 0 4px}
 .login .btn+.btn3{margin-top:8px}
+.link.small{display:block;margin:14px auto 0;font-size:12.5px;font-weight:500;color:var(--muted);text-decoration:underline;text-underline-offset:3px}

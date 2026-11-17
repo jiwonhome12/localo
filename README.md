@@ -41,7 +41,7 @@
 | 지도 | 통계청 행정구역 경계를 SVG로 변환. 인트로 변형에 flubber 사용 |
 | 데이터베이스 · 배포 | Supabase(PostgreSQL), Vercel |
 | 지역 상태 수집 | Python, Playwright, GitHub Actions로 하루 1회 확인. 누락은 팀이 검수 |
-| 장소 데이터 | 한국관광공사 TourAPI 4.0, 카카오 로컬 API, 팀이 조사한 가격대 |
+| 장소 데이터 | 한국관광공사 TourAPI 4.0, 브이월드(국토교통부) 주소 좌표, 팀이 조사한 가격대 |
 | 지원 규칙 | 팀원이 지자체 공식 공고를 확인하고 신청 기간·인정 경비·거주지 제한 기록 |
 
 
@@ -94,5 +94,5 @@ python -m http.server 8000
 | `scripts/` | 시트 동기화(`sync_sheet.py`), 좌표 찾기(`geocode.py`), 화면 데이터 만들기·검증(`build_data.py`) |
 | `.github/workflows/sync-data.yml` | 매일 시트를 읽어 데이터 갱신 |
 
-API 키는 코드에 넣지 않고 GitHub Secrets(`GOOGLE_SERVICE_ACCOUNT_JSON`, `KAKAO_REST_API_KEY`)로 관리합니다.
+API 키는 코드에 넣지 않고 GitHub Secrets(`GOOGLE_SERVICE_ACCOUNT_JSON`, `VWORLD_API_KEY`)로 관리합니다.
 

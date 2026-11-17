@@ -209,17 +209,15 @@ def main():
             'price': price or 0,
             'price_text': f"{menu} {price:,}원" if price else (menu or '가격 확인 필요'),
             'access_text': short or '주소 확인 필요', 'capacity': 0,
-            'menu': menu, 'address': address, 'rating': text(f.get('평점·후기 출처')),
-            'source_url': text(f.get('출처 URL')), 'note': text(f.get('메모')), 'reason': text(f.get('선정 이유')),
+            'menu': menu, 'address': address,
+            'source_url': text(f.get('출처 URL')), 'note': text(f.get('메모')),
             'merchant': merchant, 'source_row': item['sourceRow'], 'sample': False,
         }
         hit = cache.get(item['id'])
         if hit and not hit.get('miss'):
             place['lat'], place['lng'] = hit['lat'], hit['lng']
             place['x'], place['y'] = to_xy(proj, hit['lat'], hit['lng'])
-            place['approx'] = False
-            if hit.get('place_url'):
-                place['map_url'] = hit['place_url']
+            place['approx'] = hit.get('by') == 'district'  # 읍·면 대표 위치만 찾은 경우
         else:
             need_spot.setdefault(rid, []).append(place)
         places.append(place)
@@ -231,6 +229,16 @@ def main():
             place['x'], place['y'] = round(x, 2), round(y, 2)
             place['lat'], place['lng'] = to_latlng(proj, x, y)
             place['approx'] = True
+
+    # 같은 읍·면 대표 위치에 여러 곳이 겹치면 작은 원 위로 나눠 놓는다
+    stacked = {}
+    for place in places:
+        if place.get('approx') and 'x' in place:
+            stacked.setdefault((place['x'], place['y']), []).append(place)
+    for (x, y), group in stacked.items():
+        for i, place in enumerate(group[1:], 1):
+            a = 2 * math.pi * i / (len(group) - 1)
+            place['x'], place['y'] = round(x + 0.9 * math.cos(a), 2), round(y + 0.9 * math.sin(a), 2)
 
     if len({p['id'] for p in places + kept}) != len(places) + len(kept):
         errors.append('장소 id가 겹칩니다')

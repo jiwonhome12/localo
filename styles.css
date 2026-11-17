@@ -430,3 +430,7 @@ body.my-open #page-my,body.community-open #page-community{display:flex}
   .fchip{height:32px;font-size:12.5px;padding:0 11px}
   .c-head{flex-direction:column;align-items:stretch}
 }
+.sent{text-align:left;font-size:13px;color:var(--muted);background:var(--accent-soft);border-radius:14px;padding:14px 16px;margin:14px 0 10px;line-height:1.6}
+.sent>b:first-child{display:block;color:var(--accent);font-size:15px;margin-bottom:2px}
+.sent span{display:block;color:var(--ink);font-weight:600;margin-bottom:6px;word-break:break-all}
+.login .btn3{width:100%}

@@ -41,7 +41,14 @@
   /* ───────── 이 기기 저장소(시제품). 로그인·알림·지난 여행·커뮤니티 글은 나중에 Supabase로 옮긴다 ───────── */
   const KEY = 'localo.v1';
   const DB = (() => { try { return { user: null, alarms: {}, trips: [], posts: [], likes: {}, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch (e) { return { user: null, alarms: {}, trips: [], posts: [], likes: {} }; } })();
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch (e) { /* 저장 불가(사생활 보호 모드 등) — 화면은 그대로 동작 */ } };
+  const CLOUD = window.LocaloCloud || null; // cloud.js → Supabase. 없으면 이 기기 저장(시제품)
+  // 서버를 쓸 때는 이 기기 사본을 남기지 않는다(로그인 데이터는 서버가 원본)
+  const save = () => { if (CLOUD) return; try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch (e) { /* 저장 불가(사생활 보호 모드 등) — 화면은 그대로 동작 */ } };
+  // 서버 작업: 실패하면 알리고 서버 상태로 다시 맞춘다
+  async function cloud(fn, fail = '저장하지 못했어요. 잠시 후 다시 해 주세요') {
+    if (!CLOUD) return true;
+    try { return await fn(CLOUD); } catch (e) { console.warn(e); toast(fail); refreshCloud(); return false; }
+  }
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const today = () => new Date().toISOString().slice(0, 10);
   // 로그인이 필요한 기능: 로그인 안 했으면 마이 탭으로 보내고 false
@@ -259,9 +266,9 @@
   function toggleAlarm(rid) {
     if (!needLogin('신청 알림')) return;
     const r = RM[rid];
-    if (DB.alarms[rid]) { delete DB.alarms[rid]; toast(`${r.name} 알림을 껐어요`); }
+    if (DB.alarms[rid]) { delete DB.alarms[rid]; toast(`${r.name} 알림을 껐어요`); cloud((c) => c.delAlarm(rid)); }
     else {
-      DB.alarms[rid] = { status: r.status, at: today() };
+      DB.alarms[rid] = { status: r.status, at: today() }; cloud((c) => c.setAlarm(rid, r.status));
       toast(r.status === 'open' ? `${r.name}은 지금 신청 중이에요. 상태가 바뀌면 알려 드릴게요` : `${r.name} 신청이 시작되면 알려 드릴게요`);
       if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {});
     }
@@ -272,7 +279,7 @@
     const changed = Object.entries(DB.alarms).filter(([rid, a]) => RM[rid] && RM[rid].status !== a.status);
     changed.forEach(([rid]) => {
       const r = RM[rid], msg = r.status === 'open' ? `${r.name} 반값여행 신청이 시작됐어요` : `${r.name} 신청 상태가 '${STL[r.status]}'(으)로 바뀌었어요`;
-      DB.alarms[rid].status = r.status;
+      DB.alarms[rid].status = r.status; cloud((c) => c.setAlarm(rid, r.status));
       try { if ('Notification' in window && Notification.permission === 'granted') new Notification('로컬로', { body: msg, icon: 'icons/icon-192.png' }); } catch (e) { /* 일부 브라우저는 페이지에서 직접 알림 불가 */ }
       setTimeout(() => toast(msg), 3200);
     });
@@ -435,9 +442,11 @@
     if (!needLogin('여행 저장')) return;
     const G = groups(), total = S.cart.reduce((s, c) => s + lineCost(c).amt, 0);
     const refund = Object.keys(G).reduce((s, rid) => s + refundOf(rid, G[rid].reduce((a, c) => a + lineCost(c).amt, 0)).v, 0);
-    DB.trips.unshift({ id: uid(), title: tripTitle(S.cart), d1: $('d1').value, d2: $('d2').value, people: S.people, mode: S.mode,
-      cart: S.cart.map((c) => ({ ...c })), order: JSON.parse(JSON.stringify(S.order)), total, pay: total - refund, savedAt: today() });
-    save(); toast('지난 여행에 저장했어요 · 마이에서 다시 불러올 수 있어요');
+    const trip = { id: uid(), title: tripTitle(S.cart), d1: $('d1').value, d2: $('d2').value, people: S.people, mode: S.mode,
+      cart: S.cart.map((c) => ({ ...c })), order: JSON.parse(JSON.stringify(S.order)), total, pay: total - refund, savedAt: today() };
+    DB.trips.unshift(trip); save();
+    cloud(async (c) => { trip.id = await c.addTrip(trip); toast('지난 여행에 저장했어요 · 마이에서 다시 불러올 수 있어요'); });
+    if (!CLOUD) toast('지난 여행에 저장했어요 · 마이에서 다시 불러올 수 있어요');
   }
   function loadTrip(id) {
     const t = DB.trips.find((x) => x.id === id); if (!t) return;
@@ -453,13 +462,24 @@
         <div class="login-mark"><svg viewBox="40 20 370 490" aria-hidden="true"><path d="M48 38H212V272H92V458H232V502H48V228H168V82H48Z" fill="#2f5d50"/><path d="M208 28H402V482H358V262H228V218H358V72H208Z" fill="#7fa597"/></svg></div>
         <h3>로그인하고 여행을 이어 가세요</h3>
         <p>신청 알림, 지난 여행 다시 보기, 커뮤니티 글쓰기는 로그인 후 쓸 수 있어요.</p>
-        <label class="fld"><span>닉네임</span><input id="loginName" maxlength="12" placeholder="예: 거창여행자" autocomplete="nickname"></label>
+        ${!CLOUD ? `<label class="fld"><span>닉네임</span><input id="loginName" maxlength="12" placeholder="예: 거창여행자" autocomplete="nickname"></label>
         <button type="button" class="btn" data-login>시작하기</button>
-        <p class="fine">시제품 로그인이에요. 정보는 이 기기에만 저장되고, 카카오·구글 로그인은 서버 연결 후 열려요.</p></div>`;
+        <p class="fine">서버에 연결하지 못해 이 기기에만 저장하는 시제품 로그인으로 동작해요.</p>`
+        : linkSent ? `<div class="sent"><b>메일을 보냈어요</b><span>${esc(linkSent)}</span>메일함의 <b>로그인 링크</b>를 누르면 이 화면으로 돌아와 로그인돼요. 메일이 안 보이면 스팸함도 확인해 주세요.</div>
+        <button type="button" class="btn3" data-relink>다른 이메일로 받기</button>`
+        : `<label class="fld"><span>이메일</span><input id="loginEmail" type="email" inputmode="email" placeholder="you@example.com" autocomplete="email"></label>
+        <button type="button" class="btn" data-email-login>로그인 링크 받기</button>
+        <p class="fine">비밀번호 없이 메일로 받은 링크를 누르면 로그인돼요. 처음이면 자동으로 가입돼요.</p>`}</div>`;
+      return;
+    }
+    if (!DB.user.name) { // 첫 로그인: 닉네임 정하기
+      box.innerHTML = `<div class="login"><h3>닉네임을 정해 주세요</h3><p>커뮤니티에 코스를 올릴 때 보이는 이름이에요.</p>
+        <label class="fld"><span>닉네임 (12자 이내)</span><input id="nickName" maxlength="12" value="${esc(DB.user.suggest || '')}" autocomplete="nickname"></label>
+        <button type="button" class="btn" data-nick>시작하기</button></div>`;
       return;
     }
     const al = Object.keys(DB.alarms).filter((rid) => RM[rid]);
-    box.innerHTML = `<div class="me"><span class="avatar">${esc(DB.user.name.slice(0, 1))}</span><div><b>${esc(DB.user.name)}</b><small>${esc(DB.user.since)} 가입 · 이 기기 저장</small></div><button type="button" class="btn3" data-logout>로그아웃</button></div>
+    box.innerHTML = `<div class="me"><span class="avatar">${esc(DB.user.name.slice(0, 1))}</span><div><b>${esc(DB.user.name)}</b><small>${esc(DB.user.since)} 가입${DB.user.email ? ' · ' + esc(DB.user.email) : ' · 이 기기 저장'}</small></div><button type="button" class="btn3" data-logout>로그아웃</button></div>
       <h4 class="sec">신청 알림 <small>${al.length}곳</small></h4>
       ${al.length ? `<div class="alist">${al.map((rid) => { const r = RM[rid]; return `<div class="arow"><span class="dot ${r.status}"></span><button type="button" class="link" data-r="${rid}">${r.sido} ${r.name}</button><span class="st ${r.status}">${STL[r.status]}</span><button type="button" class="x2" data-alarm="${rid}" aria-label="${r.name} 알림 끄기">끄기</button></div>`; }).join('')}</div>`
         : `<p class="empty">지역을 열고 🔔 신청 알림을 누르면 신청이 시작될 때 알려 드려요.</p>`}
@@ -468,6 +488,59 @@
         <div class="tl">${t.cart.filter((c) => PM[c.pid]).map((c) => `<span class="tchip"><span class="dot" style="background:${CAT[PM[c.pid].category].c}"></span>${esc(PM[c.pid].name)}</span>`).join('')}</div>
         <div class="tf"><span>예상 부담 <b class="num">${won(t.pay)}</b> <small class="num">(경비 ${won(t.total)})</small></span><span><button type="button" class="btn3" data-load-trip="${t.id}">다시 보기</button><button type="button" class="x2" data-del-trip="${t.id}">삭제</button></span></div></div>`).join('')
         : `<p class="empty">장바구니에서 '이 여행 저장하기'를 누르면 여기에 쌓여요.</p>`}`;
+  }
+
+  /* ───────── Supabase 로그인·동기화 ───────── */
+  let linkSent = '';
+  async function emailLogin(btn) {
+    const email = ($('loginEmail').value || '').trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('이메일 주소를 확인해 주세요'); return $('loginEmail').focus(); }
+    btn.disabled = true; btn.textContent = '보내는 중…';
+    try { await CLOUD.sendLink(email); linkSent = email; renderMy(); }
+    catch (e) { console.warn(e); btn.disabled = false; btn.textContent = '로그인 링크 받기';
+      toast(/rate|seconds/i.test(e.message || '') ? '메일을 너무 자주 요청했어요. 잠시 후 다시 해 주세요' : '메일을 보내지 못했어요. 주소를 확인해 주세요'); }
+  }
+  async function saveNick(btn) {
+    const n = ($('nickName').value || '').trim();
+    if (!n) { toast('닉네임을 적어 주세요'); return $('nickName').focus(); }
+    btn.disabled = true;
+    if (await cloud((c) => c.setNickname(n).then(() => true), '닉네임을 저장하지 못했어요')) {
+      DB.user.name = n; DB.user.since = today(); renderMy(); renderCommunity(); toast(`${n}님, 반가워요`);
+      migrateLocal();
+    } else btn.disabled = false;
+  }
+  // 서버 연결 전 이 기기에 저장해 둔 알림·지난 여행·코스 글을 첫 로그인 때 서버로 옮긴다
+  async function migrateLocal() {
+    let old; try { old = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { old = null; }
+    if (!old || !CLOUD || !DB.user || !DB.user.name) return;
+    const al = Object.entries(old.alarms || {}), tr = old.trips || [], po = (old.posts || []).filter((p) => p.ids && p.ids.length >= 2);
+    if (!al.length && !tr.length && !po.length) { try { localStorage.removeItem(KEY); } catch (e) {} return; }
+    try {
+      for (const [rid, a] of al) if (RM[rid]) await CLOUD.setAlarm(rid, a.status);
+      for (const t of tr.slice().reverse()) await CLOUD.addTrip(t);
+      for (const p of po.slice().reverse()) await CLOUD.addPost(p);
+      localStorage.removeItem(KEY);
+      toast(`이 기기에 있던 알림 ${al.length} · 여행 ${tr.length} · 글 ${po.length}개를 계정으로 옮겼어요`);
+      refreshCloud();
+    } catch (e) { console.warn('옮기기 실패', e); }
+  }
+  // 서버에서 다시 읽어 화면을 맞춘다(로그인·로그아웃·오류 후)
+  async function refreshCloud() {
+    if (!CLOUD) return;
+    try {
+      const user = await CLOUD.session();
+      if (user) {
+        const [prof, mine] = await Promise.all([CLOUD.profile(), CLOUD.mine()]);
+        DB.user = { id: user.id, email: user.email, name: prof ? prof.nickname : '', since: prof ? String(prof.created_at).slice(0, 10) : today(), suggest: (user.email || '').split('@')[0].slice(0, 12) };
+        Object.assign(DB, mine);
+      } else Object.assign(DB, { user: null, alarms: {}, trips: [], likes: {} });
+      DB.posts = await CLOUD.posts(DB.likes);
+    } catch (e) { console.warn('Supabase 읽기 실패', e); }
+    renderLeft();
+    if (DB.user && !DB.user.name && S.panel !== 'my') openPanel('my'); // 첫 로그인: 닉네임 정하기
+    if (S.panel === 'my') renderMy();
+    if (S.panel === 'community') renderCommunity();
+    if (DB.user && DB.user.name) { checkAlarms(); migrateLocal(); }
   }
 
   /* ───────── 커뮤니티: 지역별 여행 코스 나누기 ───────── */
@@ -499,20 +572,21 @@
     box.innerHTML = `<div class="c-head"><p>지역별로 다녀온 코스를 나누고, 마음에 드는 코스는 장바구니에 바로 담아 보세요.</p>${writing ? '' : '<button type="button" class="btn" data-write>코스 쓰기</button>'}</div>
       ${form}
       <div class="fchips in-page">${[['all', '전체']].concat(rids.map((rid) => [rid, RM[rid].name])).map(([k, n]) => `<button type="button" class="fchip" data-cf="${k}" aria-pressed="${cFilter === k}">${n}</button>`).join('')}</div>
-      ${list.map((p) => { const mine = DB.user && p.author === DB.user.name && !p.sample, liked = !!DB.likes[p.id];
+      ${list.map((p) => { const mine = !!p.mine, liked = !!DB.likes[p.id];
         return `<article class="post"><div class="ph"><span class="pill ${RM[p.rid].status}">${RM[p.rid].name}</span>${p.sample ? '<span class="tag2">예시 글</span>' : ''}<b>${esc(p.title)}</b></div>
           <div class="pm">${esc(p.author)} · ${esc(p.at)}</div>
           <ol class="rsteps small">${p.ids.filter((id) => PM[id]).map((id, i) => `<li><span class="k">${i + 1}</span><span class="nm2">${esc(PM[id].name)}</span></li>`).join('')}</ol>
           ${p.memo ? `<p class="pmemo">${esc(p.memo)}</p>` : ''}
           <div class="pf"><button type="button" class="like${liked ? ' on' : ''}" data-like="${p.id}" aria-pressed="${liked}">♥ <span class="num">${(p.likes || 0) + (liked ? 1 : 0)}</span></button><span><button type="button" class="btn3" data-take="${p.id}">코스 담기</button>${mine ? `<button type="button" class="x2" data-del-post="${p.id}">삭제</button>` : ''}</span></div></article>`; }).join('') || '<p class="empty">아직 이 지역 코스가 없어요.</p>'}
-      <p class="fine">시제품이라 글은 이 기기에만 저장돼요. 서버(Supabase) 연결 후 다른 사용자와 공유돼요.</p>`;
+      <p class="fine">${CLOUD ? '올린 코스는 로컬로 사용자 모두에게 보여요. 예시 글은 화면 설계용이에요.' : '서버에 연결하지 못해 글이 이 기기에만 저장돼요.'}</p>`;
   }
-  function postCourse() {
+  async function postCourse() {
     const rid = courseRid(), ids = rid ? courseIds(rid) : [], title = ($('pTitle') || {}).value || '';
     if (ids.length < 2) return;
     if (!title.trim()) { toast('제목을 적어 주세요'); $('pTitle').focus(); return; }
-    DB.posts.unshift({ id: uid(), rid, title: title.trim(), memo: ($('pMemo').value || '').trim(), ids, author: DB.user.name, at: today(), likes: 0 });
-    save(); writing = false; cFilter = rid; renderCommunity(); toast('코스를 올렸어요');
+    const post = { id: uid(), rid, title: title.trim(), memo: ($('pMemo').value || '').trim(), ids, author: DB.user.name, at: today(), likes: 0, mine: true };
+    if (!(await cloud(async (c) => { post.id = await c.addPost(post); return true; }, '코스를 올리지 못했어요'))) return;
+    DB.posts.unshift(post); save(); writing = false; cFilter = rid; renderCommunity(); toast('코스를 올렸어요');
   }
   function takeCourse(id) {
     const p = allPosts().find((x) => x.id === id); if (!p) return;
@@ -690,15 +764,25 @@
     if (t.hasAttribute('data-autosort')) { const rid = courseRid(); S.order[rid] = shortestOrder(courseIds(rid)); if (S.route) S.route = courseIds(rid); drawRoute(); renderRoute(); renderOverlay(); return toast('가까운 순으로 정렬했어요'); }
     if (t.hasAttribute('data-save-trip')) return saveTrip();
     if (d.loadTrip) return loadTrip(d.loadTrip);
-    if (d.delTrip) { DB.trips = DB.trips.filter((x) => x.id !== d.delTrip); save(); return renderMy(); }
+    if (d.delTrip) { const id = d.delTrip; DB.trips = DB.trips.filter((x) => x.id !== id); save(); cloud((c) => c.delTrip(id)); return renderMy(); }
+    if (t.hasAttribute('data-email-login')) return emailLogin(t);
+    if (t.hasAttribute('data-relink')) { linkSent = ''; return renderMy(); }
+    if (t.hasAttribute('data-nick')) return saveNick(t);
     if (t.hasAttribute('data-login')) { const n = ($('loginName').value || '').trim(); if (!n) { toast('닉네임을 적어 주세요'); return $('loginName').focus(); } DB.user = { name: n, since: today() }; save(); renderMy(); renderLeft(); return toast(`${n}님, 반가워요`); }
-    if (t.hasAttribute('data-logout')) { DB.user = null; save(); renderMy(); return toast('로그아웃했어요'); }
-    if (t.hasAttribute('data-write')) { if (!writing && !needLogin('코스 쓰기')) return; writing = !writing; return renderCommunity(); }
+    if (t.hasAttribute('data-logout')) { if (CLOUD) { CLOUD.signOut(); return; } DB.user = null; save(); renderMy(); return toast('로그아웃했어요'); }
+    if (t.hasAttribute('data-write')) { if (!writing && !needLogin('코스 쓰기')) return; if (!writing && !DB.user.name) { openPanel('my'); return toast('닉네임을 먼저 정해 주세요'); } writing = !writing; return renderCommunity(); }
     if (t.hasAttribute('data-post')) return postCourse();
     if (d.cf) { cFilter = d.cf; return renderCommunity(); }
-    if (d.like) { if (DB.likes[d.like]) delete DB.likes[d.like]; else DB.likes[d.like] = 1; save(); return renderCommunity(); }
+    if (d.like) {
+      const id = d.like, post = allPosts().find((x) => x.id === id);
+      if (CLOUD && post && !post.sample) { // 서버 글: 로그인 필요
+        if (!needLogin('좋아요')) return;
+        if (DB.likes[id]) { delete DB.likes[id]; cloud((c) => c.unlike(id)); } else { DB.likes[id] = 1; cloud((c) => c.like(id)); }
+      } else if (DB.likes[id]) delete DB.likes[id]; else DB.likes[id] = 1; // 예시 글·시제품: 화면에서만
+      save(); return renderCommunity();
+    }
     if (d.take) return takeCourse(d.take);
-    if (d.delPost) { DB.posts = DB.posts.filter((x) => x.id !== d.delPost); save(); return renderCommunity(); }
+    if (d.delPost) { const id = d.delPost; DB.posts = DB.posts.filter((x) => x.id !== id); save(); cloud((c) => c.delPost(id)); return renderCommunity(); }
     if (d.m) { S.mode = d.m; document.querySelectorAll('#mode button').forEach((b) => b.setAttribute('aria-pressed', b === t)); renderStack(); return; }
     if (t.id === 'pm' || t.id === 'pl') return setPeople(S.people + (t.id === 'pl' ? 1 : -1));
     if (d.basket) { S.basket = d.basket; S.route = null; drawRoute(); renderStack(); renderRoute(); renderOverlay(); return; }
@@ -786,7 +870,19 @@
   const pick = (rid, cat, i = 0) => (placesOf(rid).filter((p) => p.category === cat)[i] || {}).id;
   const cartOf = (ids) => ids.filter(Boolean).map((pid) => ({ pid, qty: defaultQty(PM[pid]) }));
   S.cart = cartOf([pick('geochang', 'food'), pick('geochang', 'stay'), pick('geochang', 'cafe'), pick('hamyang', 'food')]); S.basket = 'geochang';
-  setVB(VB0.slice()); renderAll(); playIntro(); checkAlarms();
+  if (CLOUD) {
+    Object.assign(DB, { user: null, alarms: {}, trips: [], posts: [], likes: {} });
+    let first = true;
+    CLOUD.onAuth((user) => {
+      if (first) { first = false; return; } // 첫 호출은 아래 refreshCloud 가 처리
+      linkSent = '';
+      if (user && S.panel !== 'my' && !(DB.user && DB.user.id === user.id)) openPanel('my');
+      if (!user) toast('로그아웃했어요');
+      refreshCloud();
+    });
+  }
+  setVB(VB0.slice()); renderAll(); playIntro();
+  if (CLOUD) refreshCloud(); else checkAlarms();
   history.replaceState({ ...snap(), i: 0 }, '');
 
   // 홈 화면 설치(PWA) — 지원되는 곳에서만

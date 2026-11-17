@@ -71,6 +71,11 @@ body{margin:0;background:var(--bg);color:var(--ink);display:flex;align-items:cen
 <script>
   // 실제 휴대폰(좁은 화면 + 터치)으로 열면 폰 틀 없이 앱으로 바로 간다
   if (matchMedia('(max-width: 600px) and (pointer: coarse)').matches) location.replace('app.html' + location.search + location.hash);
+  // 메일 로그인 링크로 돌아오면(#access_token… 또는 ?code=…) 그 값을 폰 안 앱으로 넘기고 주소창은 깨끗하게
+  if (location.hash || location.search) {
+    document.getElementById('app').src = 'app.html' + location.search + location.hash;
+    history.replaceState(null, '', location.pathname);
+  }
   const stage = document.getElementById('stage');
   function scale() {
     const k = Math.min(1, (innerHeight - 32) / stage.offsetHeight, (innerWidth - 32) / stage.offsetWidth);

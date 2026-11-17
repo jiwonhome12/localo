@@ -97,3 +97,12 @@ python -m http.server 8000
 
 API 키는 코드에 넣지 않고 GitHub Secrets(`GOOGLE_SERVICE_ACCOUNT_JSON`, `VWORLD_API_KEY`)로 관리합니다.
 
+## 서버 (Supabase)
+
+로그인·신청 알림·지난 여행·커뮤니티는 Supabase를 씁니다. 연결 코드는 `cloud.js`, 테이블·접근 규칙은 `supabase/schema.sql`입니다.
+
+- **처음 한 번:** Supabase 대시보드 → SQL Editor에 `supabase/schema.sql` 전체를 붙여 넣고 Run.
+- **로그인:** 이메일 링크(비밀번호 없음). Authentication → URL Configuration의 Redirect URLs에 `http://localhost:8000/**`와 배포 주소를 등록합니다.
+- **키:** `cloud.js`에는 공개용(publishable) 키만 둡니다. 데이터 보호는 RLS가 맡습니다. `service_role`(secret) 키는 코드에 넣지 않고 GitHub Secrets에만 둡니다.
+- Supabase를 불러오지 못하면 앱은 이 기기에만 저장하는 시제품 방식으로 동작합니다.
+

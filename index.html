@@ -2,101 +2,90 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>로컬로</title>
 <meta name="description" content="반값여행 지역의 신청 일정·식당·숙박·카페를 한 지도에서 보고 여행 경비와 환급액을 미리 계산하는 웹앱">
-<meta name="theme-color" content="#ffffff">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="로컬로">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="styles.css?v=20261117b">
+<style>
+/* 아이폰 16 Pro 기준: 화면 402×874pt, 위 안전영역 62, 아래 34, 다이내믹 아일랜드 126×37 */
+:root{
+  --W:402px; --H:874px; --safe-top:62px; --safe-bottom:34px; --bezel:13px; --screen-r:56px;
+  --bg:#e9eeec; --ink:#1d2725; --muted:#66726e; --line:#d5ddda; --accent:#2f5d50;
+  --frame:#8d8b86; --frame-hi:#c9c6bf; --frame-lo:#5d5b57;
+  font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:16px}
+/* 폰: 바깥 프레임 → 베젤(검정) → 화면 */
+.stage{flex:none;width:calc(var(--W) + var(--bezel) * 2 + 8px);height:calc(var(--H) + var(--bezel) * 2 + 8px);transform-origin:center}
+.phone{position:relative;width:100%;height:100%;border-radius:calc(var(--screen-r) + var(--bezel) + 4px);padding:4px;
+  background:linear-gradient(145deg,var(--frame-hi),var(--frame) 30%,var(--frame-lo) 70%,var(--frame-hi));
+  box-shadow:0 30px 60px rgba(29,39,37,.28),0 8px 18px rgba(29,39,37,.18)}
+.bezel{width:100%;height:100%;border-radius:calc(var(--screen-r) + var(--bezel));background:#0b0b0c;padding:var(--bezel)}
+.screen{position:relative;width:var(--W);height:var(--H);border-radius:var(--screen-r);overflow:hidden;background:#fff}
+/* 옆 버튼 */
+.key{position:absolute;width:4px;border-radius:2px;background:linear-gradient(90deg,var(--frame-lo),var(--frame-hi))}
+.key.action{left:-3px;top:150px;height:34px}
+.key.vup{left:-3px;top:212px;height:62px}
+.key.vdn{left:-3px;top:290px;height:62px}
+.key.power{right:-3px;top:250px;height:96px}
+.key.cam{right:-3px;top:420px;height:58px;border-radius:3px}
+
+.status{position:absolute;inset:0 0 auto;height:var(--safe-top);display:flex;align-items:center;justify-content:space-between;padding:6px 34px 0 46px;font-size:16px;font-weight:600;color:#000;z-index:2;background:#fff;letter-spacing:-.01em}
+.status .right{display:flex;align-items:center;gap:6px}
+.status svg{display:block}
+.island{position:absolute;top:11px;left:50%;width:126px;height:37px;margin-left:-63px;border-radius:20px;background:#000;z-index:3}
+.app{position:absolute;left:0;top:var(--safe-top);width:var(--W);height:calc(var(--H) - var(--safe-top) - var(--safe-bottom));border:0;display:block;background:#fff}
+.home-area{position:absolute;inset:auto 0 0;height:var(--safe-bottom);background:#fff;z-index:2}
+.home-bar{position:absolute;bottom:8px;left:50%;width:140px;height:5px;margin-left:-70px;border-radius:3px;background:#111;z-index:3}
+
+</style>
 </head>
 <body>
-<script>document.body.dataset.sheet="peek"</script>
-<header class="top">
-  <div class="top-in">
-    <button type="button" class="brand" data-logo aria-label="로컬로 · 첫 화면으로">
-      <svg viewBox="40 20 370 490" aria-hidden="true"><path d="M48 38H212V272H92V458H232V502H48V228H168V82H48Z" fill="#2f5d50"/><path d="M208 28H402V482H358V262H228V218H358V72H208Z" fill="#7fa597"/></svg>
-      로컬로 <small>반값여행 지역 지도</small>
-    </button>
-    <nav class="nav" aria-label="주 메뉴">
-      <button type="button" aria-current="page">지역 지도</button>
-      <button type="button" data-soon="축제 캘린더">축제 캘린더</button>
-      <button type="button" data-tab="ai">AI 코스 추천</button>
-      <button type="button" data-soon="반값여행 안내">반값여행 안내</button>
-    </nav>
-    <div class="top-right">지역 상태 확인일 <span id="checked">-</span></div>
-  </div>
-</header>
-
-<main class="shell">
-  <aside class="panel left" id="sheet" aria-label="지역과 장소">
-    <button class="sheet-handle" id="handle" type="button" aria-label="목록 펼치기"></button>
-    <div class="p-scroll" id="left"></div>
-    <div class="tray" id="tray"></div>
-  </aside>
-
-  <section class="mapwrap" id="mapwrap" aria-label="반값여행 지역 지도">
-    <svg class="map-svg" id="svg" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-      <g id="g-shadow" class="layer-fade"></g>
-      <g id="g-prov" class="layer-fade"></g>
-      <g id="g-munis" class="layer-fade"></g>
-      <g id="g-targets" class="layer-fade"></g>
-      <g id="g-deco" class="layer-fade"></g>
-      <g id="g-route"></g>
-      <path id="morph" class="morph" d=""/>
-    </svg>
-    <div class="overlay" id="overlay"></div>
-    <div class="map-top" id="maptop"></div>
-    <div class="map-foot">
-      <div class="cap" id="cap"><b>ㄹ</b> + <b>ㅋ</b> = 로컬로 · <span class="star">★</span> 디지털 관광주민증 혜택</div>
-      <div class="grow"></div>
-      <span class="credit">경계: 통계청 센서스용 행정구역경계</span>
-      <button class="replay" id="replay" type="button">ㄹㅋ 다시 보기</button>
-    </div>
-  </section>
-
-  <aside class="panel right" id="trip" aria-label="여행 경비 계산">
-    <div class="trip-head">내 여행 <button type="button" id="tripClose">지도로</button></div>
-    <div class="p-scroll">
-      <p class="p-title">내 여행 스택</p>
-      <div class="form">
-        <div class="field"><label for="d1">가는 날</label><input id="d1" type="date" value="2026-11-21"></div>
-        <div class="field"><label for="d2">오는 날</label><input id="d2" type="date" value="2026-11-22"></div>
-        <div class="field"><label id="pplLabel">인원</label>
-          <div class="stepper" role="group" aria-labelledby="pplLabel"><button type="button" id="pm" aria-label="인원 줄이기">−</button><span class="num" id="pp">2명</span><button type="button" id="pl" aria-label="인원 늘리기">+</button></div>
+<div class="stage" id="stage">
+  <div class="phone">
+    <span class="key action"></span><span class="key vup"></span><span class="key vdn"></span><span class="key power"></span><span class="key cam"></span>
+    <div class="bezel">
+      <div class="screen">
+        <div class="status" aria-hidden="true">
+          <span id="clock">9:41</span>
+          <span class="right">
+            <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="#000" stroke-width="1.9" stroke-linecap="round"><path d="M1.5 4.3a9.5 9.5 0 0 1 13 0"/><path d="M4 7a6 6 0 0 1 8 0"/><circle cx="8" cy="10" r="1.2" fill="#000" stroke="none"/></svg>
+            <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.6" fill="none" stroke="#000" stroke-opacity=".4"/><rect x="2" y="2" width="18" height="9" rx="2.2"/><path d="M25 4.5v4c.9-.3 1.5-1.1 1.5-2s-.6-1.7-1.5-2Z" fill-opacity=".45"/></svg>
+          </span>
         </div>
-        <div class="field"><label id="modeLabel">지원 유형</label>
-          <div class="seg" id="mode" role="group" aria-labelledby="modeLabel">
-            <button type="button" data-m="normal" aria-pressed="true">일반</button>
-            <button type="button" data-m="youth" aria-pressed="false">청년</button>
-            <button type="button" data-m="family" aria-pressed="false">가족</button>
-          </div>
-        </div>
+        <div class="island"></div>
+        <iframe class="app" id="app" src="app.html" title="로컬로 앱"></iframe>
+        <div class="home-area"></div>
+        <div class="home-bar"></div>
       </div>
-      <div class="bar" id="bar"></div>
-      <div class="bar-l" id="barl"></div>
-      <div class="stack" id="stack"></div>
-      <div class="route" id="route"></div>
     </div>
-    <div class="sum" id="sum"></div>
-  </aside>
-</main>
+  </div>
+</div>
 
-<nav class="tabbar" aria-label="앱 메뉴">
-  <button type="button" aria-current="page" data-tab="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></svg>지도</button>
-  <button type="button" data-soon="축제 캘린더"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>축제</button>
-  <button type="button" data-tab="ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M6 18l2-2M16 8l2-2"/><circle cx="12" cy="12" r="3"/></svg>AI 코스</button>
-  <button type="button" data-tab="trip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M5 8h14l-1.2 11a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>내 여행<span class="badge num" id="badge" hidden>0</span></button>
-</nav>
-<div class="toast" id="toast" role="status"></div>
-
-<script src="https://cdn.jsdelivr.net/npm/flubber@0.4.2/build/flubber.min.js"></script>
-<script src="app.js?v=20261117b"></script>
+<script>
+  // 실제 휴대폰(좁은 화면 + 터치)으로 열면 폰 틀 없이 앱으로 바로 간다
+  if (matchMedia('(max-width: 600px) and (pointer: coarse)').matches) location.replace('app.html' + location.search + location.hash);
+  // 메일 로그인 링크로 돌아오면(#access_token… 또는 ?code=…) 그 값을 폰 안 앱으로 넘기고 주소창은 깨끗하게
+  if (location.hash || location.search) {
+    document.getElementById('app').src = 'app.html' + location.search + location.hash;
+    history.replaceState(null, '', location.pathname);
+  }
+  const stage = document.getElementById('stage');
+  function scale() {
+    const k = Math.min(1, (innerHeight - 32) / stage.offsetHeight, (innerWidth - 32) / stage.offsetWidth);
+    stage.style.transform = `scale(${k})`;
+    stage.style.margin = `${(stage.offsetHeight * (k - 1)) / 2}px ${(stage.offsetWidth * (k - 1)) / 2}px`;
+  }
+  addEventListener('resize', scale); scale();
+  const clock = document.getElementById('clock');
+  const tick = () => { const d = new Date(); clock.textContent = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`; };
+  tick(); setInterval(tick, 15000);
+</script>
 </body>
 </html>

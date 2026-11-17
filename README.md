@@ -85,14 +85,24 @@ python -m http.server 8000
 # http://localhost:8000 열기
 ```
 
-`index.html`을 더블클릭해 파일로 열면 브라우저가 데이터 파일 읽기를 막아 지도가 뜨지 않습니다. 배포는 Vercel(프레임워크 없음, 빌드 명령 비움)이나 GitHub Pages에 저장소 루트를 그대로 올리면 됩니다.
+`index.html`(폰 틀 미리보기)이나 `app.html`(앱)을 더블클릭해 파일로 열면 브라우저가 데이터 파일 읽기를 막아 지도가 뜨지 않습니다. 배포는 Vercel(프레임워크 없음, 빌드 명령 비움)이나 GitHub Pages에 저장소 루트를 그대로 올리면 됩니다.
 
 | 폴더·파일 | 역할 |
 | --- | --- |
-| `index.html`, `styles.css`, `app.js` | 화면 (아티팩트에서 옮김) |
+| `index.html` | 첫 화면: 아이폰 16 Pro 틀 안에서 앱 실행. 실제 휴대폰으로 열면 `app.html`로 바로 이동 |
+| `app.html`, `styles.css`, `app.js` | 앱 화면 (아티팩트에서 옮김) |
 | `data/` | 지도 경계와 화면용 데이터 |
 | `scripts/` | 시트 동기화(`sync_sheet.py`), 좌표 찾기(`geocode.py`), 화면 데이터 만들기·검증(`build_data.py`) |
 | `.github/workflows/sync-data.yml` | 매일 시트를 읽어 데이터 갱신 |
 
 API 키는 코드에 넣지 않고 GitHub Secrets(`GOOGLE_SERVICE_ACCOUNT_JSON`, `VWORLD_API_KEY`)로 관리합니다.
+
+## 서버 (Supabase)
+
+로그인·신청 알림·지난 여행·커뮤니티는 Supabase를 씁니다. 연결 코드는 `cloud.js`, 테이블·접근 규칙은 `supabase/schema.sql`입니다.
+
+- **처음 한 번:** Supabase 대시보드 → SQL Editor에 `supabase/schema.sql` 전체를 붙여 넣고 Run.
+- **로그인:** 이메일 링크(비밀번호 없음). Authentication → URL Configuration의 Redirect URLs에 `http://localhost:8000/**`와 배포 주소를 등록합니다.
+- **키:** `cloud.js`에는 공개용(publishable) 키만 둡니다. 데이터 보호는 RLS가 맡습니다. `service_role`(secret) 키는 코드에 넣지 않고 GitHub Secrets에만 둡니다.
+- Supabase를 불러오지 못하면 앱은 이 기기에만 저장하는 시제품 방식으로 동작합니다.
 

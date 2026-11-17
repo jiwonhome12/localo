@@ -36,7 +36,7 @@
     return [cx - half, y, half * 2, h];
   })();
   let vb = VB0.slice();
-  const S = { view: 'all', rid: null, cat: 'all', pid: null, filter: 'all', people: 2, mode: 'normal', cart: [], route: null, basket: 'all', order: {}, panel: null };
+  const S = { view: 'all', rid: null, cat: 'all', pid: null, filter: 'all', people: 2, mode: 'normal', cart: [], route: null, basket: 'all', order: {}, panel: null, cmpF: 'avail', cmpMore: false };
 
   /* ───────── 이 기기 저장소(시제품). 로그인·알림·지난 여행·커뮤니티 글은 나중에 Supabase로 옮긴다 ───────── */
   const KEY = 'localo.v1';
@@ -259,9 +259,9 @@
 
   /* ───────── 신청 알림: 알림을 켠 지역이 '신청접수중'이 되면 알려 준다 ───────── */
   function alarmBtn(r) {
-    const on = !!DB.alarms[r.id];
-    return `<button type="button" class="alarm${on ? ' on' : ''}" data-alarm="${r.id}" aria-pressed="${on}" title="${r.status === 'open' ? '신청 상태가 바뀌면 알림' : '신청 시작 알림'}">
-      <svg viewBox="0 0 24 24" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15Z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0" fill="none" stroke-linecap="round"/></svg>${on ? '알림 켜짐' : '신청 알림'}</button>`;
+    const on = !!DB.alarms[r.id], locked = !DB.user; // 여행지 알림은 로그인한 사람만
+    return `<button type="button" class="alarm${on ? ' on' : ''}${locked ? ' locked' : ''}" data-alarm="${r.id}" aria-pressed="${on}" title="${locked ? '로그인 후 사용할 수 있어요' : r.status === 'open' ? '신청 상태가 바뀌면 알림' : '신청 시작 알림'}">
+      <svg viewBox="0 0 24 24" fill="${on ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15Z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0" fill="none" stroke-linecap="round"/></svg>${on ? '알림 켜짐' : '신청 알림'}${locked ? '<span class="lk">로그인</span>' : ''}</button>`;
   }
   function toggleAlarm(rid) {
     if (!needLogin('신청 알림')) return;
@@ -366,6 +366,45 @@
       <div class="row total"><span>실제 부담 예상</span><b class="num">${won(total - refund)}</b></div>
       ${S.cart.length ? `<button type="button" class="btn save-trip" data-save-trip>이 여행 저장하기</button>` : ''}
       <p class="fine">반값여행은 지역마다 따로 신청·정산하므로 바구니도 지역별로 나눠 계산합니다. 환급은 지역화폐 가맹점 결제만 인정되고 지역사랑상품권으로 지급되며, 비율·한도·최소 소비 금액은 해당 지자체 공고가 최종 기준입니다.</p>`;
+    renderCompare();
+  }
+
+  /* ───────── 지역별 비교: 같은 금액을 쓰면 지역마다 환급·실부담이 얼마인지(지역 공고의 환급 규칙만 사용, 장소 가격 데이터는 쓰지 않음) ───────── */
+  function estimate(rid, cost) {
+    const rf = refundOf(rid, cost);
+    return { rid, cost, refund: rf.v, pay: cost - rf.v, why: rf.why, ru: rf.ru };
+  }
+  function renderCompare() {
+    const box = $('cmp');
+    if (!S.cart.length) { box.innerHTML = ''; return; }
+    const G = groups(), mine = Object.keys(G);
+    const spend = S.cart.reduce((t, c) => t + lineCost(c).amt, 0);
+    // 1) 담은 바구니끼리(실제 담은 장소 가격)
+    const real = mine.length < 2 ? '' : (() => {
+      const rows = mine.map((rid) => { const sub = G[rid].reduce((s, c) => s + lineCost(c).amt, 0), f = refundOf(rid, sub); return { rid, sub, v: f.v, why: f.why }; })
+        .sort((a, b) => (a.sub - a.v) - (b.sub - b.v));
+      return `<table class="ctable"><thead><tr><th>담은 바구니</th><th>경비</th><th>환급</th><th>실부담</th><th>환급률</th></tr></thead><tbody>${rows.map((x) => `<tr><td><span class="dot ${RM[x.rid].status}"></span>${RM[x.rid].name}</td><td class="num">${won(x.sub)}</td><td class="num acc">−${won(x.v)}</td><td class="num"><b>${won(x.sub - x.v)}</b></td><td class="num">${x.sub ? Math.round(x.v / x.sub * 100) : 0}%${x.why && x.v === 0 ? `<small>${esc(x.why)}</small>` : ''}</td></tr>`).join('')}</tbody></table>`;
+    })();
+    // 2) 같은 구성이면 지역마다 얼마?
+    const all = R.filter((r) => S.cmpF === 'all' || r.status !== 'closed').map((r) => estimate(r.id, spend)).sort((a, b) => a.pay - b.pay || b.refund - a.refund);
+    const show = (S.cmpMore ? all : all.slice(0, 5)).slice();
+    mine.forEach((rid) => { if (!show.some((x) => x.rid === rid)) { const x = all.find((y) => y.rid === rid); if (x) show.push(x); } }); // 내 지역은 항상 보이게
+    const max = Math.max(1, spend);
+    const best = all[0], worst = all[all.length - 1];
+    const cur = mine.length ? all.find((x) => x.rid === courseRid()) || null : null;
+    const insight = !best ? '' : `<p class="cins"><b class="num">${won(spend)}</b>을 쓰면 <b>${RM[best.rid].name}</b>에서 환급 <b class="num">${won(best.refund)}</b>로 가장 많이 돌려받고${worst !== best && worst.pay > best.pay ? `, <b>${RM[worst.rid].name}</b>(환급 <span class="num">${won(worst.refund)}</span>)보다 <b class="num">${won(worst.pay - best.pay)}</b> 덜 내요.` : '.'}${cur && cur.rid !== best.rid && cur.pay > best.pay ? ` 지금 바구니 <b>${RM[cur.rid].name}</b>보다 <b class="num">${won(cur.pay - best.pay)}</b> 아낄 수 있어요.` : ''}</p>`;
+    box.innerHTML = `<div class="cmp-h"><b>지역별 비교</b><small>${S.people}명 · ${MODE[S.mode]} · 경비 ${won(spend)}</small></div>
+      ${real}
+      <div class="cmp-sub"><span>같은 금액을 다른 지역에서 쓰면?</span><div class="seg mini2" role="group" aria-label="비교할 지역"><button type="button" data-cmp-f="avail" aria-pressed="${S.cmpF !== 'all'}">신청 가능</button><button type="button" data-cmp-f="all" aria-pressed="${S.cmpF === 'all'}">전체</button></div></div>
+      ${insight}
+      <ol class="clist">${show.map((x) => { const r = RM[x.rid];
+        return `<li${mine.includes(x.rid) ? ' class="mine"' : ''}><span class="rk num">${all.filter((y) => y.pay < x.pay).length + 1}</span>
+          <button type="button" class="cn" data-cmp-r="${x.rid}"><span class="dot ${r.status}"></span>${r.name}${mine.includes(x.rid) ? '<span class="tag">담은 곳</span>' : ''}</button>
+          <span class="cv"><b class="num">${won(x.pay)}</b><small class="num">환급 ${won(x.refund)}${x.ru.cap != null ? ` · 한도 ${won(x.ru.cap)}` : ''}</small></span>
+          <span class="cbar" aria-hidden="true"><i class="p" style="width:${x.pay / max * 100}%"></i><i class="f" style="width:${x.refund / max * 100}%"></i></span>
+          ${x.why && x.refund === 0 ? `<small class="cwhy">${esc(x.why)}</small>` : ''}</li>`; }).join('')}</ol>
+      ${all.length > 5 ? `<button type="button" class="btn3 cmore" data-cmp-more>${S.cmpMore ? '접기' : `${all.length}곳 모두 보기`}</button>` : ''}
+      <p class="fine">막대: 진한 부분 = 실제 부담, 연한 부분 = 환급. 지금 장바구니 경비를 그대로 다른 지역에서 쓴다고 보고, 지역 공고의 환급 비율·한도·최소 소비만으로 계산했어요(장소 가격 데이터는 쓰지 않아요).</p>`;
   }
 
   /* ───────── 내 코스: 사용자가 정한 순서대로. '가까운 순'은 거리 계산(최근접 + 2-opt)으로 도와준다 ───────── */
@@ -410,14 +449,14 @@
     if (ids.length < 2) { box.innerHTML = `<div class="route-h"><b>내 코스 <small>한 지역에 장소 2곳 이상 담으면 순서를 정할 수 있어요</small></b></div>`; return; }
     let tot = 0;
     const li = ids.map((id, i) => { const p = PM[id]; const d = i ? km(PM[ids[i - 1]], p) : 0; tot += d;
-      return `<li><span class="k">${i + 1}</span><span class="nm2">${esc(p.name)}</span><span class="leg num">${i ? '+' + d.toFixed(1) + 'km' : '출발'}</span>
+      return `<li data-stop="${id}"><span class="grip" data-grip aria-hidden="true" title="끌어서 순서 바꾸기"><svg viewBox="0 0 12 16"><circle cx="3.5" cy="3" r="1.4"/><circle cx="8.5" cy="3" r="1.4"/><circle cx="3.5" cy="8" r="1.4"/><circle cx="8.5" cy="8" r="1.4"/><circle cx="3.5" cy="13" r="1.4"/><circle cx="8.5" cy="13" r="1.4"/></svg></span><span class="k">${i + 1}</span><span class="nm2">${esc(p.name)}</span><span class="leg num">${i ? '+' + d.toFixed(1) + 'km' : '출발'}</span>
         <span class="mv"><button type="button" data-mv="${id}" data-d="-1" aria-label="${esc(p.name)} 앞으로"${i ? '' : ' disabled'}>↑</button><button type="button" data-mv="${id}" data-d="1" aria-label="${esc(p.name)} 뒤로"${i < ids.length - 1 ? '' : ' disabled'}>↓</button></span></li>`; }).join('');
     const approx = ids.some((id) => PM[id].approx || PM[id].sample);
     box.innerHTML = `<div class="route-h"><b>내 코스 · ${RM[rid].name} <small>직선 ${tot.toFixed(1)}km</small></b>
       <button type="button" class="btn2${S.route ? ' on' : ''}" data-route>${S.route ? '지도에서 끄기' : '지도에서 보기'}</button></div>
-      <ol class="rsteps">${li}</ol>
+      <ol class="rsteps drag" id="rsteps">${li}</ol>
       <div class="rbtns"><button type="button" class="btn3" data-autosort>가까운 순으로 정렬</button><a class="btn3" href="${kakaoRoute(ids)}" target="_blank" rel="noopener">카카오맵 길찾기</a></div>
-      <p class="rnote">↑↓로 원하는 순서를 정하면 그 순서대로 지도·길찾기에 반영돼요. 길찾기는 카카오맵 앱·웹으로 열려요(최대 6곳).${approx ? ' 지금은 일부 장소 위치가 근사값이라 길찾기 위치가 정확하지 않을 수 있어요.' : ''}</p>`;
+      <p class="rnote">⠿를 끌어 놓거나 ↑↓로 원하는 순서를 정하면 그 순서대로 지도·길찾기에 반영돼요. 길찾기는 카카오맵 앱·웹으로 열려요(최대 6곳).${approx ? ' 지금은 일부 장소 위치가 근사값이라 길찾기 위치가 정확하지 않을 수 있어요.' : ''}</p>`;
   }
   function drawRoute() {
     const g = $('g-route');
@@ -572,11 +611,11 @@
     renderLeft();
     if (DB.user && !DB.user.name && S.panel !== 'my') openPanel('my'); // 첫 로그인: 닉네임 정하기
     if (S.panel === 'my') renderMy();
-    if (S.panel === 'community') renderCommunity();
+    if (S.panel === 'community' && !writing) renderCommunity(); // 글 쓰는 중이면 입력을 지우지 않게
     if (DB.user && DB.user.name) { checkAlarms(); migrateLocal(); }
   }
 
-  /* ───────── 커뮤니티: 지역별 여행 코스 나누기 ───────── */
+  /* ───────── 커뮤니티: 사진을 곁들인 여행 글 + 지역 검색 ───────── */
   // 예시 글(실제 사용자 글 아님): 화면 설계용으로 수집 시트 장소를 이어 만든 코스
   const SEED = (() => {
     const mk = (id, rid, title, memo, cats) => {
@@ -588,38 +627,144 @@
       mk('s2', 'hamyang', '함양 당일치기 맛집 코스', '최소 소비 금액을 맞추기 좋게 식당 두 곳과 카페를 묶었어요.', [['food', 0], ['cafe', 0], ['food', 1]]),
       mk('s3', 'yeongwol', '영월 가족 여행 코스', '아이와 함께라 이동 거리를 짧게 잡았어요.', [['spot', 0], ['food', 0], ['stay', 0]])].filter(Boolean);
   })();
-  let cFilter = 'all', writing = false;
+  let cFilter = 'all', writing = false, cq = '', draft = [], opened = {}, topRank = null, topAt = 0;
   const allPosts = () => DB.posts.concat(SEED);
+  const PHOTO_MAX = 6;
+  // 사진 주소는 우리 저장소(Supabase Storage) 것이나 이 기기에 저장한 이미지 데이터만 그린다
+  const safeImg = (u) => (typeof u === 'string' && (/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(u) || (CLOUD && CLOUD.isImageUrl(u))) ? u : '');
+
+  /* 지역 검색 + 많이 찾는 지역 TOP 10 */
+  const SIDO_FULL = { 강원: '강원도 강원특별자치도', 충북: '충청북도', 충남: '충청남도', 경북: '경상북도', 경남: '경상남도', 전북: '전라북도 전북특별자치도', 전남: '전라남도' };
+  const norm = (s) => String(s || '').replace(/\s+/g, '').toLowerCase();
+  const matchQ = (q) => (r) => [r.name, r.short, r.sido, SIDO_FULL[r.sido], r.id, r.sido + r.name].some((v) => norm(v).includes(norm(q)));
+  const LS_SEARCH = 'localo.search';
+  function loadTop(force) {
+    if (!force && Date.now() - topAt < 30000) return;
+    topAt = Date.now();
+    if (!CLOUD) {
+      try { const m = JSON.parse(localStorage.getItem(LS_SEARCH) || '{}'); topRank = Object.entries(m).map(([rid, count]) => ({ rid, count })).sort((a, b) => b.count - a.count); } catch (e) { topRank = []; }
+      if (!cq) renderSearch(); return;
+    }
+    CLOUD.topSearches().then((r) => { topRank = r; if (!cq) renderSearch(); }).catch((e) => console.warn('검색 순위 읽기 실패(supabase/schema.sql 최신본 실행 필요)', e));
+  }
+  function bumpSearch(rid) {
+    if (CLOUD) return CLOUD.bumpSearch(rid).then(() => loadTop(true)).catch(() => {});
+    try { const m = JSON.parse(localStorage.getItem(LS_SEARCH) || '{}'); m[rid] = (m[rid] || 0) + 1; localStorage.setItem(LS_SEARCH, JSON.stringify(m)); } catch (e) { /* 저장 불가 */ }
+    loadTop(true);
+  }
+  function topTen() {
+    const srv = (topRank || []).filter((x) => RM[x.rid] && x.count > 0), seen = new Set(srv.map((x) => x.rid));
+    const pc = {}; allPosts().forEach((p) => { pc[p.rid] = (pc[p.rid] || 0) + 1; });
+    const rest = R.filter((r) => !seen.has(r.id)).sort((a, b) => (pc[b.id] || 0) - (pc[a.id] || 0) || ORDER[b.status] - ORDER[a.status]);
+    return srv.concat(rest.map((r) => ({ rid: r.id, count: 0 }))).slice(0, 10);
+  }
+  function renderSearch() {
+    const box = $('csr'); if (!box) return;
+    const q = cq.trim();
+    if (q) {
+      const pc = {}; allPosts().forEach((p) => { pc[p.rid] = (pc[p.rid] || 0) + 1; });
+      const hits = R.filter(matchQ(q));
+      box.innerHTML = hits.length ? `<div class="shits">${hits.map((r) => `<button type="button" class="shit" data-cs="${r.id}"><span class="dot ${r.status}"></span><b>${r.name}</b><small>${r.sido} · 글 ${pc[r.id] || 0}개</small><span class="st ${r.status}">${STL[r.status]}</span></button>`).join('')}</div>`
+        : `<p class="empty">'${esc(q)}'에 맞는 반값여행 지역이 없어요. 시·군 이름이나 도 이름(예: 경남)으로 찾아보세요.</p>`;
+      return;
+    }
+    const top = topTen(), byCount = top.some((x) => x.count);
+    box.innerHTML = `<div class="top10"><div class="t10h"><b>지금 많이 찾는 지역 TOP 10</b><small>${byCount ? '검색 수 기준' : '검색이 쌓이기 전 · 글 수·신청 상태 순'}</small></div>
+      <ol class="t10">${top.map((x, i) => `<li><button type="button" data-cs="${x.rid}" aria-pressed="${cFilter === x.rid}"><span class="n num">${i + 1}</span><span class="nm">${RM[x.rid].name}</span><small>${RM[x.rid].sido}</small></button></li>`).join('')}</ol></div>`;
+  }
+  function pickRegion(rid) {
+    if (rid !== 'all') bumpSearch(rid);
+    cFilter = rid; cq = ''; renderCommunity();
+  }
+
+  /* 글: 사진을 곁들인 블로그 형식. 코스(장바구니 순서)는 선택해서 붙인다 */
+  function postHTML(p) {
+    const mine = !!p.mine, liked = !!DB.likes[p.id], r = RM[p.rid];
+    const imgs = (p.images || []).map(safeImg).filter(Boolean), ids = (p.ids || []).filter((id) => PM[id]), open = !!opened[p.id];
+    const long = (p.memo || '').length > 110 || (p.memo || '').split('\n').length > 3 || imgs.length > 1 || ids.length > 0;
+    return `<article class="post blog">
+      ${imgs[0] ? `<img class="cover" src="${esc(imgs[0])}" alt="${esc(p.title)} 대표 사진" loading="lazy">` : ''}
+      <div class="pb">
+        <div class="ph"><span class="pill ${r.status}">${r.name}</span>${p.sample ? '<span class="tag2">예시 글</span>' : ''}</div>
+        <h3 class="pt">${esc(p.title)}</h3>
+        <div class="pm">${esc(p.author)} · ${esc(p.at)}${imgs.length ? ` · 사진 ${imgs.length}` : ''}${ids.length ? ` · 코스 ${ids.length}곳` : ''}</div>
+        ${p.memo ? `<p class="pmemo${open ? '' : ' clamp'}">${esc(p.memo)}</p>` : ''}
+        ${open && imgs.length > 1 ? `<div class="gal">${imgs.slice(1).map((u, i) => `<img src="${esc(u)}" alt="${esc(p.title)} 사진 ${i + 2}" loading="lazy">`).join('')}</div>` : ''}
+        ${open && ids.length ? `<div class="pcourse"><b>코스</b><ol class="rsteps small">${ids.map((id, i) => `<li><span class="k">${i + 1}</span><span class="nm2">${esc(PM[id].name)}</span></li>`).join('')}</ol></div>` : ''}
+        ${long ? `<button type="button" class="more" data-open-post="${p.id}" aria-expanded="${open}">${open ? '접기' : '더 보기'}</button>` : ''}
+        <div class="pf"><button type="button" class="like${liked ? ' on' : ''}" data-like="${p.id}" aria-pressed="${liked}">♥ <span class="num">${(p.likes || 0) + (liked ? 1 : 0)}</span></button><span>${ids.length ? `<button type="button" class="btn3" data-take="${p.id}">코스 담기</button>` : ''}${mine ? `<button type="button" class="x2" data-del-post="${p.id}">삭제</button>` : ''}</span></div>
+      </div></article>`;
+  }
+  function renderDraft() {
+    const box = $('pPrev'); if (!box) return;
+    box.innerHTML = draft.map((d, i) => `<span class="thumb"><img src="${d.url}" alt="고른 사진 ${i + 1}"><button type="button" data-draft-rm="${i}" aria-label="사진 ${i + 1} 빼기">×</button></span>`).join('')
+      + (draft.length < PHOTO_MAX ? `<label class="addph"><input type="file" id="pFile" accept="image/jpeg,image/png,image/webp,image/*" multiple hidden><span>＋</span><small>${draft.length}/${PHOTO_MAX}</small></label>` : '');
+  }
+  function clearDraft() { draft.forEach((d) => URL.revokeObjectURL(d.url)); draft = []; }
+  // 사진은 올리기 전에 긴 변 1280px JPEG로 줄인다(용량·속도)
+  async function shrink(file, max = 1280) {
+    const src = URL.createObjectURL(file);
+    try {
+      const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; });
+      const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      return await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.82));
+    } finally { URL.revokeObjectURL(src); }
+  }
+  async function addPhotos(files) {
+    const list = [...files].slice(0, PHOTO_MAX - draft.length);
+    if (files.length > list.length) toast(`사진은 ${PHOTO_MAX}장까지 넣을 수 있어요`);
+    for (const f of list) {
+      try { const blob = await shrink(f); if (blob) draft.push({ blob, url: URL.createObjectURL(blob) }); }
+      catch (e) { console.warn(e); toast('이 사진은 열 수 없어요(JPG·PNG로 바꿔 주세요)'); }
+    }
+    renderDraft();
+  }
+  const toDataURL = (blob) => new Promise((ok) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(blob); });
+
   function renderCommunity() {
-    const box = $('community'), posts = allPosts(), rids = [...new Set(posts.map((p) => p.rid))].filter((rid) => RM[rid]);
+    const box = $('community'), posts = allPosts();
     const list = posts.filter((p) => RM[p.rid] && (cFilter === 'all' || p.rid === cFilter));
     const crid = courseRid(), cids = crid ? courseIds(crid) : [];
+    const def = cFilter !== 'all' ? cFilter : crid || R[0].id;
     const form = !writing ? '' : `<div class="wform">
-      <h4 class="sec">내 코스 공유하기</h4>
-      ${cids.length >= 2 ? `<p class="fine">장바구니의 <b>${RM[crid].name}</b> 코스(${cids.length}곳, 내가 정한 순서)를 올려요.</p>
-        <ol class="rsteps small">${cids.map((id, i) => `<li><span class="k">${i + 1}</span><span class="nm2">${esc(PM[id].name)}</span></li>`).join('')}</ol>
-        <label class="fld"><span>제목</span><input id="pTitle" maxlength="40" placeholder="예: ${RM[crid].short} 1박 2일 먹방 코스"></label>
-        <label class="fld"><span>한 줄 팁</span><textarea id="pMemo" rows="3" maxlength="300" placeholder="이동 순서, 최소 소비 맞추는 팁 등"></textarea></label>
-        <div class="rbtns"><button type="button" class="btn" data-post>올리기</button><button type="button" class="btn3" data-write>취소</button></div>`
-      : `<p class="empty">한 지역에 장소를 2곳 이상 담고 장바구니의 '내 코스'에서 순서를 정하면 공유할 수 있어요.</p><div class="rbtns"><button type="button" class="btn3" data-write>닫기</button></div>`}</div>`;
-    box.innerHTML = `<div class="c-head"><p>지역별로 다녀온 코스를 나누고, 마음에 드는 코스는 장바구니에 바로 담아 보세요.</p>${writing ? '' : '<button type="button" class="btn" data-write>코스 쓰기</button>'}</div>
+      <h4 class="sec">여행 글 쓰기</h4>
+      <label class="fld"><span>지역</span><select id="pRid">${SIDO_ORDER.map((sd) => `<optgroup label="${sd}">${R.filter((r) => r.sido === sd).map((r) => `<option value="${r.id}"${r.id === def ? ' selected' : ''}>${r.name}</option>`).join('')}</optgroup>`).join('')}</select></label>
+      <label class="fld"><span>제목</span><input id="pTitle" maxlength="40" placeholder="예: ${RM[def].short} 1박 2일 먹방 여행"></label>
+      <label class="fld"><span>본문</span><textarea id="pMemo" rows="8" maxlength="3000" placeholder="다녀온 이야기, 이동 순서, 최소 소비 금액 맞추는 팁 등을 자유롭게 적어 주세요"></textarea></label>
+      <div class="fld"><span>사진 (최대 ${PHOTO_MAX}장 · 첫 장이 대표 사진)</span><div class="pprev" id="pPrev"></div></div>
+      ${cids.length >= 2 ? `<label class="chk"><input type="checkbox" id="pCourse" checked><span>장바구니의 <b>${RM[crid].name}</b> 코스 ${cids.length}곳도 함께 올리기</span></label>
+        <ol class="rsteps small">${cids.map((id, i) => `<li><span class="k">${i + 1}</span><span class="nm2">${esc(PM[id].name)}</span></li>`).join('')}</ol>` : ''}
+      <div class="rbtns"><button type="button" class="btn" data-post>올리기</button><button type="button" class="btn3" data-write>취소</button></div></div>`;
+    box.innerHTML = `<label class="sbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg><input id="cq" type="search" placeholder="지역 검색 · 예: 거창, 경남" value="${esc(cq)}" autocomplete="off" enterkeyhint="search" aria-label="지역 검색"></label>
+      <div id="csr"></div>
+      <div class="c-head">${cFilter !== 'all' ? `<p class="cfil"><span class="dot ${RM[cFilter].status}"></span><b>${RM[cFilter].name}</b> 글 ${list.length}개 <button type="button" class="x2" data-cs="all">전체 보기</button></p>` : `<p>다녀온 여행을 사진과 함께 나누고, 마음에 드는 코스는 장바구니에 바로 담아 보세요.</p>`}${writing ? '' : '<button type="button" class="btn" data-write>글쓰기</button>'}</div>
       ${form}
-      <div class="fchips in-page">${[['all', '전체']].concat(rids.map((rid) => [rid, RM[rid].name])).map(([k, n]) => `<button type="button" class="fchip" data-cf="${k}" aria-pressed="${cFilter === k}">${n}</button>`).join('')}</div>
-      ${list.map((p) => { const mine = !!p.mine, liked = !!DB.likes[p.id];
-        return `<article class="post"><div class="ph"><span class="pill ${RM[p.rid].status}">${RM[p.rid].name}</span>${p.sample ? '<span class="tag2">예시 글</span>' : ''}<b>${esc(p.title)}</b></div>
-          <div class="pm">${esc(p.author)} · ${esc(p.at)}</div>
-          <ol class="rsteps small">${p.ids.filter((id) => PM[id]).map((id, i) => `<li><span class="k">${i + 1}</span><span class="nm2">${esc(PM[id].name)}</span></li>`).join('')}</ol>
-          ${p.memo ? `<p class="pmemo">${esc(p.memo)}</p>` : ''}
-          <div class="pf"><button type="button" class="like${liked ? ' on' : ''}" data-like="${p.id}" aria-pressed="${liked}">♥ <span class="num">${(p.likes || 0) + (liked ? 1 : 0)}</span></button><span><button type="button" class="btn3" data-take="${p.id}">코스 담기</button>${mine ? `<button type="button" class="x2" data-del-post="${p.id}">삭제</button>` : ''}</span></div></article>`; }).join('') || '<p class="empty">아직 이 지역 코스가 없어요.</p>'}
-      <p class="fine">${CLOUD ? '올린 코스는 로컬로 사용자 모두에게 보여요. 예시 글은 화면 설계용이에요.' : '서버에 연결하지 못해 글이 이 기기에만 저장돼요.'}</p>`;
+      <div class="posts">${list.map(postHTML).join('') || '<p class="empty">아직 이 지역 글이 없어요. 첫 글을 남겨 보세요.</p>'}</div>
+      <p class="fine">${CLOUD ? '올린 글과 사진은 로컬로 사용자 모두에게 보여요. 예시 글은 화면 설계용이에요.' : '서버에 연결하지 못해 글이 이 기기에만 저장돼요.'}</p>`;
+    renderSearch(); renderDraft();
   }
-  async function postCourse() {
-    const rid = courseRid(), ids = rid ? courseIds(rid) : [], title = ($('pTitle') || {}).value || '';
-    if (ids.length < 2) return;
-    if (!title.trim()) { toast('제목을 적어 주세요'); $('pTitle').focus(); return; }
-    const post = { id: uid(), rid, title: title.trim(), memo: ($('pMemo').value || '').trim(), ids, author: DB.user.name, at: today(), likes: 0, mine: true };
-    if (!(await cloud(async (c) => { post.id = await c.addPost(post); return true; }, '코스를 올리지 못했어요'))) return;
-    DB.posts.unshift(post); save(); writing = false; cFilter = rid; renderCommunity(); toast('코스를 올렸어요');
+  async function postArticle(btn) {
+    const rid = $('pRid').value, title = $('pTitle').value.trim(), memo = $('pMemo').value.trim();
+    if (!title) { toast('제목을 적어 주세요'); return $('pTitle').focus(); }
+    if (!memo && !draft.length) { toast('본문이나 사진을 넣어 주세요'); return $('pMemo').focus(); }
+    const crid = courseRid(), withCourse = !!($('pCourse') && $('pCourse').checked);
+    if (withCourse && crid !== rid) { toast(`코스는 ${RM[crid].name} 지역이에요. 지역을 맞추거나 코스 첨부를 해제해 주세요`); return $('pRid').focus(); }
+    const post = { id: uid(), rid, title, memo, ids: withCourse ? courseIds(crid).slice() : [], images: [], author: DB.user.name, at: today(), likes: 0, mine: true };
+    const label = btn.textContent; btn.disabled = true;
+    if (CLOUD) {
+      try {
+        for (let i = 0; i < draft.length; i++) { btn.textContent = `사진 올리는 중 ${i + 1}/${draft.length}…`; post.images.push(await CLOUD.uploadImage(draft[i].blob)); }
+        btn.textContent = '올리는 중…'; post.id = await CLOUD.addPost(post);
+      } catch (e) {
+        console.warn(e); btn.disabled = false; btn.textContent = label;
+        if (post.images.length) CLOUD.removeImages(post.images).catch(() => {});
+        const m = (e && e.message) || '';
+        return toast(/bucket|images|column|schema|check constraint/i.test(m) ? '사진·글 저장소가 아직 준비되지 않았어요 · supabase/schema.sql 최신본을 실행해 주세요' : '글을 올리지 못했어요. 잠시 후 다시 해 주세요');
+      }
+    } else post.images = await Promise.all(draft.map((d) => toDataURL(d.blob)));
+    DB.posts.unshift(post); save(); clearDraft(); writing = false; cFilter = rid; renderCommunity(); toast('글을 올렸어요');
   }
   function takeCourse(id) {
     const p = allPosts().find((x) => x.id === id); if (!p) return;
@@ -744,7 +889,7 @@
     S.panel = name;
     ['trip', 'my', 'community'].forEach((k) => document.body.classList.toggle(k + '-open', name === k));
     if (name === 'my') renderMy();
-    if (name === 'community') renderCommunity();
+    if (name === 'community') { renderCommunity(); loadTop(); }
     const cur = name === 'trip' || !name ? 'map' : name;
     document.querySelectorAll('.tabbar [data-tab], .nav [data-tab]').forEach((b) => b.setAttribute('aria-current', b.dataset.tab === cur ? 'page' : 'false'));
     if (name === 'trip' && !mobile()) $('trip').querySelector('.p-scroll').scrollTo({ top: 0, behavior: 'smooth' });
@@ -756,6 +901,37 @@
     if (some && S.people < 2) { toast('여행 인원이 2명 이상일 때 일부만 갈 수 있어요'); return; }
     c.who = some ? Math.max(1, S.people - 1) : null; renderStack();
   }
+  // 내 코스 끌어서 놓기: 손잡이(⠿)를 잡고 위아래로 끌면 자리가 바뀐다. 손가락·마우스 모두(pointer 이벤트)
+  let dd = null;
+  document.addEventListener('pointerdown', (e) => {
+    const g = e.target.closest('[data-grip]'); if (!g) return;
+    const li = g.closest('li'), ol = li.parentElement;
+    e.preventDefault();
+    dd = { li, ol, y0: e.clientY, top0: li.offsetTop, id: e.pointerId };
+    li.classList.add('dragging'); ol.classList.add('sorting');
+    try { g.setPointerCapture(e.pointerId); } catch (_) { /* 일부 브라우저 */ }
+  });
+  document.addEventListener('pointermove', (e) => {
+    if (!dd || e.pointerId !== dd.id) return;
+    const { li, ol } = dd;
+    // 손가락 위치에 맞는 자리로 옮기기(다른 항목의 가운데를 넘으면 자리 교체)
+    const sibs = [...ol.children].filter((x) => x !== li);
+    const after = sibs.find((x) => { const r = x.getBoundingClientRect(); return e.clientY < r.top + r.height / 2; });
+    if (after ? li.nextElementSibling !== after : ol.lastElementChild !== li) ol.insertBefore(li, after || null);
+    li.style.transform = `translateY(${e.clientY - dd.y0 - (li.offsetTop - dd.top0)}px)`;
+    [...ol.children].forEach((x, i) => { const k = x.querySelector('.k'); if (k) k.textContent = i + 1; });
+  });
+  const endDrag = (e) => {
+    if (!dd || (e && e.pointerId !== dd.id)) return;
+    const { li, ol } = dd; dd = null;
+    li.classList.remove('dragging'); ol.classList.remove('sorting'); li.style.transform = '';
+    const rid = courseRid(), ids = [...ol.children].map((x) => x.dataset.stop).filter(Boolean);
+    if (!rid || ids.join() === courseIds(rid).join()) return renderRoute();
+    S.order[rid] = ids; if (S.route) S.route = ids.slice();
+    drawRoute(); renderRoute(); renderOverlay();
+  };
+  document.addEventListener('pointerup', endDrag);
+  document.addEventListener('pointercancel', endDrag);
   function moveStop(pid, dir) {
     const rid = PM[pid].region_id, ids = courseIds(rid), i = ids.indexOf(pid), j = i + dir;
     if (j < 0 || j >= ids.length) return;
@@ -805,10 +981,12 @@
     if (t.hasAttribute('data-code-login')) return codeLogin(t);
     if (t.hasAttribute('data-nick')) return saveNick(t);
     if (t.hasAttribute('data-login')) { const n = ($('loginName').value || '').trim(); if (!n) { toast('닉네임을 적어 주세요'); return $('loginName').focus(); } DB.user = { name: n, since: today() }; save(); renderMy(); renderLeft(); return toast(`${n}님, 반가워요`); }
-    if (t.hasAttribute('data-logout')) { if (CLOUD) { CLOUD.signOut(); return; } DB.user = null; save(); renderMy(); return toast('로그아웃했어요'); }
-    if (t.hasAttribute('data-write')) { if (!writing && !needLogin('코스 쓰기')) return; if (!writing && !DB.user.name) { openPanel('my'); return toast('닉네임을 먼저 정해 주세요'); } writing = !writing; return renderCommunity(); }
-    if (t.hasAttribute('data-post')) return postCourse();
-    if (d.cf) { cFilter = d.cf; return renderCommunity(); }
+    if (t.hasAttribute('data-logout')) { if (CLOUD) { CLOUD.signOut(); return; } DB.user = null; save(); renderMy(); renderLeft(); return toast('로그아웃했어요'); }
+    if (t.hasAttribute('data-write')) { if (!writing && !needLogin('글쓰기')) return; if (!writing && !DB.user.name) { openPanel('my'); return toast('닉네임을 먼저 정해 주세요'); } writing = !writing; if (!writing) clearDraft(); return renderCommunity(); }
+    if (t.hasAttribute('data-post')) return postArticle(t);
+    if (d.cs) return pickRegion(d.cs);
+    if (d.openPost) { opened[d.openPost] = !opened[d.openPost]; return renderCommunity(); }
+    if (d.draftRm) { const [x] = draft.splice(+d.draftRm, 1); if (x) URL.revokeObjectURL(x.url); return renderDraft(); }
     if (d.like) {
       const id = d.like, post = allPosts().find((x) => x.id === id);
       if (CLOUD && post && !post.sample) { // 서버 글: 로그인 필요
@@ -818,15 +996,21 @@
       save(); return renderCommunity();
     }
     if (d.take) return takeCourse(d.take);
-    if (d.delPost) { const id = d.delPost; DB.posts = DB.posts.filter((x) => x.id !== id); save(); cloud((c) => c.delPost(id)); return renderCommunity(); }
+    if (d.delPost) { const id = d.delPost, gone = DB.posts.find((x) => x.id === id); DB.posts = DB.posts.filter((x) => x.id !== id); save(); cloud((c) => c.delPost(id, (gone && gone.images) || [])); return renderCommunity(); }
     if (d.m) { S.mode = d.m; document.querySelectorAll('#mode button').forEach((b) => b.setAttribute('aria-pressed', b === t)); renderStack(); return; }
     if (t.id === 'pm' || t.id === 'pl') return setPeople(S.people + (t.id === 'pl' ? 1 : -1));
+    if (d.cmpF) { S.cmpF = d.cmpF; return renderCompare(); }
+    if (t.hasAttribute('data-cmp-more')) { S.cmpMore = !S.cmpMore; return renderCompare(); }
+    if (d.cmpR) { if (mobile()) { restoring = true; openPanel(null); restoring = false; } return openRegion(d.cmpR); }
     if (d.basket) { S.basket = d.basket; S.route = null; drawRoute(); renderStack(); renderRoute(); renderOverlay(); return; }
     if (t.hasAttribute('data-route')) return toggleRoute();
-    if (t.id === 'replay') { playIntro(); return record(); }
     if (d.tab) return openPanel(d.tab === 'map' ? null : d.tab);
     if (d.soon) return toast(`${d.soon}은 다음 단계에서 열려요`);
   });
+  // 커뮤니티 검색창: 글자를 칠 때마다 결과만 다시 그린다(입력창은 그대로 두어 포커스 유지)
+  document.addEventListener('input', (e) => { if (e.target.id === 'cq') { cq = e.target.value; renderSearch(); } });
+  document.addEventListener('keydown', (e) => { if (e.target.id === 'cq' && e.key === 'Enter') { const h = R.filter(matchQ(cq.trim())); if (cq.trim() && h.length) pickRegion((h.find((r) => norm(r.name) === norm(cq) || norm(r.short) === norm(cq)) || h[0]).id); } });
+  document.addEventListener('change', (e) => { if (e.target.id === 'pFile' && e.target.files.length) addPhotos(e.target.files); });
   ['d1', 'd2'].forEach((id) => $(id).addEventListener('change', () => { renderStack(); renderRoute(); }));
   new ResizeObserver(() => { if (S.view === 'all') { vb = VB0.slice(); svg.setAttribute('viewBox', vb.join(' ')); layoutPins(); } else setVB(fitBox(RM[S.rid].bbox)); placeOverlay(); }).observe(wrap);
 

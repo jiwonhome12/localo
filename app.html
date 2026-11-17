@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="styles.css?v=20261117g">
+<link rel="stylesheet" href="styles.css?v=20261117h">
 </head>
 <body>
 <script>document.body.dataset.sheet="peek"</script>
@@ -57,10 +57,9 @@
     <div class="overlay" id="overlay"></div>
     <div class="map-top" id="maptop"></div>
     <div class="map-foot">
-      <div class="cap" id="cap"><b>ㄹ</b> + <b>ㅋ</b> = 로컬로 · <span class="star">★</span> 디지털 관광주민증 혜택</div>
+      <div class="cap" id="cap"><span class="star">★</span> 디지털 관광주민증 혜택</div>
       <div class="grow"></div>
       <span class="credit">경계: 통계청 센서스용 행정구역경계</span>
-      <button class="replay" id="replay" type="button">ㄹㅋ 다시 보기</button>
     </div>
   </section>
 
@@ -85,14 +84,15 @@
       <div class="bar" id="bar"></div>
       <div class="bar-l" id="barl"></div>
       <div class="stack" id="stack"></div>
+      <div class="cmp" id="cmp"></div>
       <div class="route" id="route"></div>
     </div>
     <div class="sum" id="sum"></div>
   </aside>
 
   <!-- 마이·커뮤니티: 휴대폰은 전체 화면, PC는 지도 위 창 -->
-  <section class="page" id="page-my" aria-label="마이"><div class="page-head"><b>마이</b><button type="button" data-tab="map">닫기</button></div><div class="page-body" id="my"></div></section>
-  <section class="page" id="page-community" aria-label="커뮤니티"><div class="page-head"><b>커뮤니티</b><button type="button" data-tab="map">닫기</button></div><div class="page-body" id="community"></div></section>
+  <section class="page" id="page-my" aria-label="마이"><div class="page-head"><b>마이</b></div><div class="page-body" id="my"></div></section>
+  <section class="page" id="page-community" aria-label="커뮤니티"><div class="page-head"><b>커뮤니티</b></div><div class="page-body" id="community"></div></section>
   <div class="page-dim" data-tab="map"></div>
 </main>
 
@@ -106,7 +106,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/flubber@0.4.2/build/flubber.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="cloud.js?v=20261117g"></script>
-<script src="app.js?v=20261117g"></script>
+<script src="cloud.js?v=20261117h"></script>
+<script src="app.js?v=20261117h"></script>
 </body>
 </html>

@@ -8,6 +8,8 @@
 --   trips    : 지난 여행 — 본인만 읽기·쓰기
 --   posts    : 커뮤니티 코스 — 모두 읽기, 쓰기·지우기는 쓴 사람만
 --   likes    : 좋아요 — 모두 읽기(개수 표시), 누르기·취소는 본인만
+--   region_searches : 커뮤니티 지역 검색 수 — 모두 읽기, 올리기는 bump_search() 함수로만
+--   storage post-images : 글 사진 — 누구나 보기, 올리기·지우기는 본인 폴더(<user id>/)만
 
 -- ── 프로필(닉네임)
 create table if not exists public.profiles (
@@ -43,10 +45,20 @@ create table if not exists public.posts (
   user_id uuid not null default auth.uid() references public.profiles (id) on delete cascade,
   region_id text not null check (char_length(region_id) <= 40),
   title text not null check (char_length(btrim(title)) between 1 and 40),
-  memo text not null default '' check (char_length(memo) <= 300),
-  place_ids text[] not null check (cardinality(place_ids) between 2 and 20),
+  memo text not null default '' check (char_length(memo) <= 3000),
+  place_ids text[] not null default '{}' check (cardinality(place_ids) <= 20),
+  images text[] not null default '{}' check (cardinality(images) <= 6),
   created_at timestamptz not null default now()
 );
+-- 예전 스키마로 이미 만든 경우: 블로그 글(본문 3000자·사진 6장·코스 선택)로 넓힌다
+alter table public.posts add column if not exists images text[] not null default '{}';
+alter table public.posts alter column place_ids set default '{}';
+alter table public.posts drop constraint if exists posts_memo_check;
+alter table public.posts add constraint posts_memo_check check (char_length(memo) <= 3000);
+alter table public.posts drop constraint if exists posts_place_ids_check;
+alter table public.posts add constraint posts_place_ids_check check (cardinality(place_ids) <= 20);
+alter table public.posts drop constraint if exists posts_images_check;
+alter table public.posts add constraint posts_images_check check (cardinality(images) <= 6);
 create index if not exists posts_region_idx on public.posts (region_id, created_at desc);
 create index if not exists posts_created_idx on public.posts (created_at desc);
 
@@ -107,3 +119,36 @@ grant insert, update on public.profiles to authenticated;
 grant select, insert, update, delete on public.alarms, public.trips to authenticated;
 grant insert, update, delete on public.posts to authenticated;
 grant insert, delete on public.likes to authenticated;
+
+-- ── 커뮤니티 지역 검색 수(많이 찾는 지역 TOP 10)
+create table if not exists public.region_searches (
+  region_id text primary key check (region_id ~ '^[a-z0-9_-]{1,40}$'),
+  count bigint not null default 0,
+  updated_at timestamptz not null default now()
+);
+alter table public.region_searches enable row level security;
+drop policy if exists "region_searches: 모두 읽기" on public.region_searches;
+create policy "region_searches: 모두 읽기" on public.region_searches for select using (true);
+grant select on public.region_searches to anon, authenticated;
+-- 직접 쓰기는 막고, 한 번에 +1만 하는 함수로만 올린다
+create or replace function public.bump_search(rid text) returns void
+language sql security definer set search_path = public as $$
+  insert into public.region_searches (region_id, count) values (rid, 1)
+  on conflict (region_id) do update set count = region_searches.count + 1, updated_at = now();
+$$;
+revoke all on function public.bump_search(text) from public;
+grant execute on function public.bump_search(text) to anon, authenticated;
+
+-- ── 글 사진 저장소(Storage). 공개 버킷 = 주소로 누구나 볼 수 있음. 2MB·이미지 형식만
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('post-images', 'post-images', true, 2097152, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update set public = true, file_size_limit = 2097152, allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp'];
+drop policy if exists "post-images: 본인 폴더에 올리기" on storage.objects;
+create policy "post-images: 본인 폴더에 올리기" on storage.objects for insert to authenticated
+  with check (bucket_id = 'post-images' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "post-images: 본인 사진 보기" on storage.objects;
+create policy "post-images: 본인 사진 보기" on storage.objects for select to authenticated
+  using (bucket_id = 'post-images' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "post-images: 본인 사진 지우기" on storage.objects;
+create policy "post-images: 본인 사진 지우기" on storage.objects for delete to authenticated
+  using (bucket_id = 'post-images' and (storage.foldername(name))[1] = auth.uid()::text);

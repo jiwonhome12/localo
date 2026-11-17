@@ -14,10 +14,14 @@
   const day = (ts) => String(ts || '').slice(0, 10);
   const toPost = (r, liked) => {
     const n = (r.likes && r.likes[0] && r.likes[0].count) || 0;
-    return { id: r.id, rid: r.region_id, title: r.title, memo: r.memo, ids: r.place_ids, at: day(r.created_at),
+    return { id: r.id, rid: r.region_id, title: r.title, memo: r.memo, ids: r.place_ids || [], images: r.images || [], at: day(r.created_at),
       author: (r.profiles && r.profiles.nickname) || '여행자', mine: !!me && r.user_id === me,
       likes: Math.max(0, n - (liked ? 1 : 0)) }; // 화면은 '남의 좋아요 + 내 좋아요'로 그린다
   };
+
+  const BUCKET = 'post-images';
+  const PUB = URL + '/storage/v1/object/public/' + BUCKET + '/';
+  const rand = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
   window.LocaloCloud = {
     // 로그인 상태 바뀔 때마다 cb(user|null)
@@ -72,13 +76,39 @@
     },
     async delTrip(id) { must(await sb.from('trips').delete().eq('id', id)); },
 
-    // 커뮤니티: 최근 글 100개(작성자 닉네임·좋아요 수 포함)
+    // 커뮤니티: 최근 글 100개(작성자 닉네임·좋아요 수·사진 포함)
     async posts(likedMap = {}) {
-      const rows = must(await sb.from('posts').select('id, user_id, region_id, title, memo, place_ids, created_at, profiles(nickname), likes(count)').order('created_at', { ascending: false }).limit(100));
-      return rows.map((r) => toPost(r, !!likedMap[r.id]));
+      const cols = 'id, user_id, region_id, title, memo, place_ids, created_at, profiles(nickname), likes(count)';
+      let res = await sb.from('posts').select(cols + ', images').order('created_at', { ascending: false }).limit(100);
+      if (res.error && /images/.test(res.error.message || '')) res = await sb.from('posts').select(cols).order('created_at', { ascending: false }).limit(100); // 스키마 최신본 실행 전
+      return must(res).map((r) => toPost(r, !!likedMap[r.id]));
     },
-    async addPost(p) { return must(await sb.from('posts').insert({ region_id: p.rid, title: p.title, memo: p.memo, place_ids: p.ids }).select('id').single()).id; },
-    async delPost(id) { must(await sb.from('posts').delete().eq('id', id)); },
+    async addPost(p) {
+      const row = { region_id: p.rid, title: p.title, memo: p.memo, place_ids: p.ids || [] };
+      if (p.images && p.images.length) row.images = p.images;
+      return must(await sb.from('posts').insert(row).select('id').single()).id;
+    },
+    async delPost(id, images = []) {
+      must(await sb.from('posts').delete().eq('id', id));
+      if (images.length) this.removeImages(images).catch(() => {});
+    },
+    // 글 사진: Storage 'post-images' 버킷의 '내 id/' 폴더에만 올릴 수 있다(schema.sql 정책)
+    async uploadImage(blob) {
+      const path = me + '/' + rand() + '.jpg';
+      must(await sb.storage.from(BUCKET).upload(path, blob, { contentType: 'image/jpeg', upsert: false }));
+      return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+    },
+    async removeImages(urls) {
+      const paths = urls.filter((u) => this.isImageUrl(u)).map((u) => u.slice(PUB.length));
+      if (paths.length) must(await sb.storage.from(BUCKET).remove(paths));
+    },
+    isImageUrl(u) { return typeof u === 'string' && u.startsWith(PUB) && !/[\s"'<>]/.test(u); },
+
+    // 지역 검색 순위: 검색해서 고른 지역마다 +1, 많이 찾은 순 10곳
+    async topSearches() {
+      return must(await sb.from('region_searches').select('region_id, count').order('count', { ascending: false }).limit(10)).map((r) => ({ rid: r.region_id, count: Number(r.count) }));
+    },
+    async bumpSearch(rid) { must(await sb.rpc('bump_search', { rid })); },
     async like(id) { must(await sb.from('likes').insert({ post_id: id })); },
     async unlike(id) { must(await sb.from('likes').delete().eq('post_id', id).eq('user_id', me)); },
   };

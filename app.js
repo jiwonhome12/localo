@@ -373,8 +373,77 @@
     if (mobile()) setSheet('peek');
     renderAll(); animateVB(fitBox(RM[id].bbox), 700, placeOverlay);
     $('left').scrollTop = 0;
+    record();
   }
-  function goHome() { S.view = 'all'; S.rid = null; S.pid = null; renderAll(); animateVB(VB0.slice(), 650, () => { layoutPins(); placeOverlay(); }); }
+  function goHome() { S.view = 'all'; S.rid = null; S.pid = null; renderAll(); animateVB(VB0.slice(), 650, () => { layoutPins(); placeOverlay(); }); record(); }
+
+  /* ───────── 화면 기록: 로고·뒤로가기 제스처로 직전 화면 복원 ───────── */
+  let restoring = false;
+  const snap = () => ({ view: S.view, rid: S.rid, cat: S.cat, pid: S.pid, trip: document.body.classList.contains('trip-open') });
+  const same = (a, b) => !!a && ['view', 'rid', 'cat', 'pid', 'trip'].every((k) => a[k] === b[k]);
+  function record() {
+    if (restoring) return;
+    const s = snap(), h = history.state;
+    if (same(h, s)) return;
+    history.pushState({ ...s, i: ((h && h.i) || 0) + 1 }, '');
+  }
+  function restore(s) {
+    restoring = true;
+    openTrip(s.trip);
+    if (s.view === 'all') {
+      if (S.view !== 'all') goHome(); else { S.pid = null; renderLeft(); renderOverlay(); }
+    } else {
+      const moved = S.view !== 'region' || S.rid !== s.rid;
+      S.view = 'region'; S.rid = s.rid; S.cat = s.cat; S.pid = s.pid;
+      renderAll();
+      if (moved) { animateVB(fitBox(RM[s.rid].bbox), 700, placeOverlay); $('left').scrollTop = 0; }
+    }
+    restoring = false;
+  }
+  function goBack() {
+    if (history.state && history.state.i > 0) return history.back();
+    openTrip(false);
+    if (S.view !== 'all') goHome(); else if (S.pid) { S.pid = null; renderLeft(); renderOverlay(); }
+  }
+  addEventListener('popstate', (e) => { if (e.state) restore(e.state); });
+  // 로고: 어디에 있든 첫 화면(전국 지도 · 지도 탭)으로
+  function goMain() {
+    restoring = true; openTrip(false); restoring = false;
+    if (mobile()) setSheet('peek');
+    if (S.view !== 'all') return goHome();
+    S.pid = null; renderLeft(); renderOverlay(); record();
+  }
+  // 왼쪽 가장자리에서 오른쪽으로 밀면 이전 화면(탭)으로.
+  // 브라우저 자체 뒤로가기 제스처가 없는 곳(홈 화면 앱, 폰 목업 iframe)에서만 직접 처리한다 — 일반 브라우저는 기록(popstate)으로 같은 동작을 한다.
+  if (matchMedia('(display-mode: standalone)').matches || navigator.standalone || window.top !== window) {
+    const edge = document.createElement('div'); edge.className = 'edge-back'; edge.setAttribute('aria-hidden', 'true');
+    edge.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
+    document.body.appendChild(edge);
+    // 손가락은 touch 이벤트로(스크롤이 시작돼도 끊기지 않게), 마우스(데스크톱의 폰 목업)는 pointer 이벤트로 받는다
+    let sw = null;
+    const start = (x, y) => { sw = x < 24 ? { x, y, t: Date.now() } : null; if (sw) edge.style.transition = 'none'; };
+    const move = (x, y) => {
+      if (!sw) return;
+      const k = Math.min(1, Math.max(0, x - sw.x) / 90);
+      edge.style.opacity = k; edge.style.transform = `translate(${-40 + 52 * k}px, ${y}px) translateY(-50%) scale(${0.6 + 0.4 * k})`;
+      edge.classList.toggle('ready', k >= 1);
+    };
+    const end = (x, y, ok) => {
+      if (!sw) return;
+      const dx = x - sw.x, dy = Math.abs(y - sw.y);
+      if (ok && dx > 70 && dy < dx * 0.7 && Date.now() - sw.t < 900) goBack();
+      edge.style.transition = ''; edge.style.opacity = 0; edge.classList.remove('ready'); sw = null;
+    };
+    const tp = (e) => e.changedTouches[0];
+    addEventListener('touchstart', (e) => { if (e.touches.length === 1) start(tp(e).clientX, tp(e).clientY); else sw = null; }, { passive: true });
+    addEventListener('touchmove', (e) => move(tp(e).clientX, tp(e).clientY), { passive: true });
+    addEventListener('touchend', (e) => end(tp(e).clientX, tp(e).clientY, true), { passive: true });
+    addEventListener('touchcancel', (e) => end(tp(e).clientX, tp(e).clientY, false), { passive: true });
+    const mouse = (f) => (e) => { if (e.pointerType === 'mouse') f(e); };
+    addEventListener('pointerdown', mouse((e) => start(e.clientX, e.clientY)));
+    addEventListener('pointermove', mouse((e) => move(e.clientX, e.clientY)));
+    addEventListener('pointerup', mouse((e) => end(e.clientX, e.clientY, true)));
+  }
   function toggleCart(pid) {
     const i = S.cart.findIndex((c) => c.pid === pid);
     if (i >= 0) S.cart.splice(i, 1);
@@ -402,6 +471,7 @@
   function openTrip(on) {
     document.body.classList.toggle('trip-open', on);
     document.querySelectorAll('.tabbar [data-tab]').forEach((b) => b.setAttribute('aria-current', (b.dataset.tab === 'map') !== on ? 'page' : 'false'));
+    record();
   }
   let toastT;
   function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1600); }
@@ -410,11 +480,12 @@
     const t = e.target.closest('button'); if (!t) return;
     const d = t.dataset;
     if (d.r && !t.closest('svg')) return openRegion(d.r);
+    if (t.hasAttribute('data-logo')) return goMain();
     if (t.hasAttribute('data-home')) return goHome();
     if (d.f) { S.filter = d.f; renderLeft(); paintTargets(); renderOverlay(); return; }
-    if (d.cat) { S.cat = d.cat; S.pid = null; renderTop(); renderLeft(); renderOverlay(); return; }
-    if (d.p) { S.pid = d.p; if (mobile()) setSheet('peek'); renderLeft(); renderOverlay(); return; }
-    if (t.hasAttribute('data-close')) { S.pid = null; renderLeft(); renderOverlay(); return; }
+    if (d.cat) { S.cat = d.cat; S.pid = null; renderTop(); renderLeft(); renderOverlay(); return record(); }
+    if (d.p) { S.pid = d.p; if (mobile()) setSheet('peek'); renderLeft(); renderOverlay(); return record(); }
+    if (t.hasAttribute('data-close')) { S.pid = null; renderLeft(); renderOverlay(); return record(); }
     if (d.add) return toggleCart(d.add);
     if (d.rm) return toggleCart(d.rm);
     if (d.q) { const c = S.cart.find((c) => c.pid === d.q); c.qty = Math.max(1, c.qty + +d.d); renderStack(); return; }
@@ -422,7 +493,7 @@
     if (t.id === 'pm' || t.id === 'pl') return setPeople(S.people + (t.id === 'pl' ? 1 : -1));
     if (d.basket) { S.basket = d.basket; S.route = null; drawRoute(); renderTray(); renderStack(); renderRoute(); renderOverlay(); return; }
     if (t.hasAttribute('data-route')) return toggleRoute();
-    if (t.id === 'replay') return playIntro();
+    if (t.id === 'replay') { playIntro(); return record(); }
     if (d.tab === 'ai') { openTrip(true); $('route').scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
     if (d.tab) return openTrip(d.tab === 'trip');
     if (t.id === 'tripClose') return openTrip(false);
@@ -489,6 +560,7 @@
   const cartOf = (ids) => ids.filter(Boolean).map((pid) => ({ pid, qty: defaultQty(PM[pid]) }));
   S.cart = cartOf([pick('geochang', 'food'), pick('geochang', 'stay'), pick('geochang', 'cafe'), pick('hamyang', 'food')]); S.basket = 'geochang';
   setVB(VB0.slice()); renderAll(); playIntro();
+  history.replaceState({ ...snap(), i: 0 }, '');
 
   // 홈 화면 설치(PWA) — 지원되는 곳에서만
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});

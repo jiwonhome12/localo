@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>로컬로 폰 미리보기</title>
+<meta name="description" content="로컬로 웹앱을 아이폰 16 Pro 화면 크기(402×874)로 미리 보는 페이지">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* 아이폰 16 Pro 기준: 화면 402×874pt, 위 안전영역 62, 아래 34, 다이내믹 아일랜드 126×37 */
+:root{
+  --W:402px; --H:874px; --safe-top:62px; --safe-bottom:34px; --bezel:13px; --screen-r:56px;
+  --bg:#e9eeec; --ink:#1d2725; --muted:#66726e; --line:#d5ddda; --accent:#2f5d50;
+  --frame:#8d8b86; --frame-hi:#c9c6bf; --frame-lo:#5d5b57;
+  font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);display:flex;align-items:center;justify-content:center;gap:56px;overflow:hidden;padding:16px}
+.info{width:240px;flex:none}
+.info h1{font-size:22px;margin:0 0 4px;letter-spacing:-.02em}
+.info p{font-size:13px;color:var(--muted);margin:0 0 18px;line-height:1.6}
+.info .spec{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;line-height:1.8}
+.info .spec b{color:var(--ink);font-weight:600}
+.btns{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.btns button,.btns a{height:38px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);font:inherit;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.btns button:hover,.btns a:hover{border-color:var(--ink)}
+.tip{font-size:12px;color:var(--muted);background:#fff;border-radius:10px;padding:10px 12px;line-height:1.6}
+.tip b{color:var(--accent)}
+
+/* 폰: 바깥 프레임 → 베젤(검정) → 화면 */
+.stage{flex:none;width:calc(var(--W) + var(--bezel) * 2 + 8px);height:calc(var(--H) + var(--bezel) * 2 + 8px);transform-origin:center}
+.phone{position:relative;width:100%;height:100%;border-radius:calc(var(--screen-r) + var(--bezel) + 4px);padding:4px;
+  background:linear-gradient(145deg,var(--frame-hi),var(--frame) 30%,var(--frame-lo) 70%,var(--frame-hi));
+  box-shadow:0 30px 60px rgba(29,39,37,.28),0 8px 18px rgba(29,39,37,.18)}
+.bezel{width:100%;height:100%;border-radius:calc(var(--screen-r) + var(--bezel));background:#0b0b0c;padding:var(--bezel)}
+.screen{position:relative;width:var(--W);height:var(--H);border-radius:var(--screen-r);overflow:hidden;background:#fff}
+/* 옆 버튼 */
+.key{position:absolute;width:4px;border-radius:2px;background:linear-gradient(90deg,var(--frame-lo),var(--frame-hi))}
+.key.action{left:-3px;top:150px;height:34px}
+.key.vup{left:-3px;top:212px;height:62px}
+.key.vdn{left:-3px;top:290px;height:62px}
+.key.power{right:-3px;top:250px;height:96px}
+.key.cam{right:-3px;top:420px;height:58px;border-radius:3px}
+
+.status{position:absolute;inset:0 0 auto;height:var(--safe-top);display:flex;align-items:center;justify-content:space-between;padding:6px 34px 0 46px;font-size:16px;font-weight:600;color:#000;z-index:2;background:#fff;letter-spacing:-.01em}
+.status .right{display:flex;align-items:center;gap:6px}
+.status svg{display:block}
+.island{position:absolute;top:11px;left:50%;width:126px;height:37px;margin-left:-63px;border-radius:20px;background:#000;z-index:3}
+.app{position:absolute;left:0;top:var(--safe-top);width:var(--W);height:calc(var(--H) - var(--safe-top) - var(--safe-bottom));border:0;display:block;background:#fff}
+.home-area{position:absolute;inset:auto 0 0;height:var(--safe-bottom);background:#fff;z-index:2}
+.home-bar{position:absolute;bottom:8px;left:50%;width:140px;height:5px;margin-left:-70px;border-radius:3px;background:#111;z-index:3}
+
+@media (max-width:760px){.info{display:none}body{gap:0}}
+</style>
+</head>
+<body>
+<section class="info" aria-label="미리보기 안내">
+  <h1>로컬로 · 폰 미리보기</h1>
+  <p>아이폰 16 Pro 화면 크기로 실제 앱을 띄워요. 화면이 작으면 비율을 유지한 채 줄어들어요.</p>
+  <div class="btns">
+    <button type="button" id="reload">앱 새로고침</button>
+    <button type="button" id="fit" aria-pressed="true">화면에 맞추기 · 켜짐</button>
+    <a href="index.html" target="_blank" rel="noopener">새 탭에서 앱 열기</a>
+  </div>
+  <div class="tip"><b>뒤로가기</b> · 화면 왼쪽 끝을 눌러 오른쪽으로 끌어 보세요(마우스도 돼요).<br><b>로고</b> · 누르면 첫 화면(전국 지도)으로 가요.</div>
+  <div class="spec">
+    화면 <b>402 × 874</b> pt<br>
+    안전영역 위 <b>62</b> · 아래 <b>34</b><br>
+    앱 영역 <b>402 × 778</b>
+  </div>
+</section>
+
+<div class="stage" id="stage">
+  <div class="phone">
+    <span class="key action"></span><span class="key vup"></span><span class="key vdn"></span><span class="key power"></span><span class="key cam"></span>
+    <div class="bezel">
+      <div class="screen">
+        <div class="status" aria-hidden="true">
+          <span id="clock">9:41</span>
+          <span class="right">
+            <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="#000" stroke-width="1.9" stroke-linecap="round"><path d="M1.5 4.3a9.5 9.5 0 0 1 13 0"/><path d="M4 7a6 6 0 0 1 8 0"/><circle cx="8" cy="10" r="1.2" fill="#000" stroke="none"/></svg>
+            <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.6" fill="none" stroke="#000" stroke-opacity=".4"/><rect x="2" y="2" width="18" height="9" rx="2.2"/><path d="M25 4.5v4c.9-.3 1.5-1.1 1.5-2s-.6-1.7-1.5-2Z" fill-opacity=".45"/></svg>
+          </span>
+        </div>
+        <div class="island"></div>
+        <iframe class="app" id="app" src="index.html" title="로컬로 앱"></iframe>
+        <div class="home-area"></div>
+        <div class="home-bar"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const stage = document.getElementById('stage'), app = document.getElementById('app'), fitBtn = document.getElementById('fit');
+  let fit = true;
+  function scale() {
+    const k = fit ? Math.min(1, (innerHeight - 32) / stage.offsetHeight, (innerWidth - 32) / stage.offsetWidth) : 1;
+    stage.style.transform = `scale(${k})`;
+    stage.style.margin = `${(stage.offsetHeight * (k - 1)) / 2}px ${(stage.offsetWidth * (k - 1)) / 2}px`;
+    document.body.style.overflow = fit ? 'hidden' : 'auto';
+    document.body.style.alignItems = fit ? 'center' : 'flex-start';
+  }
+  addEventListener('resize', scale); scale();
+  fitBtn.addEventListener('click', () => { fit = !fit; fitBtn.setAttribute('aria-pressed', fit); fitBtn.textContent = `화면에 맞추기 · ${fit ? '켜짐' : '꺼짐'}`; scale(); });
+  document.getElementById('reload').addEventListener('click', () => app.contentWindow.location.reload());
+  const clock = document.getElementById('clock');
+  const tick = () => { const d = new Date(); clock.textContent = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`; };
+  tick(); setInterval(tick, 15000);
+</script>
+</body>
+</html>

@@ -1,5 +1,7 @@
 # 로컬로 (Localo)
+해당파일 선택 후 python -m http.server 8000
 
+---
 ## UI 기준
 
 

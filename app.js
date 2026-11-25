@@ -177,9 +177,7 @@
     const r = RM[p.region_id], inCart = S.cart.some((c) => c.pid === p.id);
     const rows = p.sample
       ? `<dt>가격</dt><dd>${esc(p.price_text)}</dd><dt>접근성</dt><dd>${esc(p.access_text)}</dd>`
-      : `<dt>${p.category === 'food' || p.category === 'cafe' ? '대표 메뉴' : '이용 요금'}</dt><dd>${esc(p.price_text)}</dd><dt>주소</dt><dd>${esc(p.address || p.access_text)}</dd>
-
-         <dt>가맹점</dt><dd>${p.merchant === '예' ? '지역화폐 가맹점' : p.merchant === '아니오' ? '<b class="warn">가맹점 아님 · 환급 제외</b>' : '<span class="warn">확인 전</span>'}</dd>`;
+      : `<dt>${p.category === 'food' || p.category === 'cafe' ? '대표 메뉴' : '이용 요금'}</dt><dd>${esc(p.price_text)}</dd><dt>주소</dt><dd>${esc(p.address || p.access_text)}</dd>`;
     return `<div class="pop" data-p="${p.id}" role="dialog" aria-label="${esc(p.name)}">
       <button class="x" type="button" data-close aria-label="닫기">✕</button>
       <div class="cat-l" style="color:${CAT[p.category].c}">${CAT[p.category].n} · ${r.name}</div>
@@ -227,6 +225,7 @@
       <p class="ex">${esc(r.status_checked_at)} 확인 · 최종 조건은 지자체 공고 기준${r.tour_resident_card ? ' · <span class="star">★</span> 관광주민증 혜택' : ''}</p></details>
       ${safeUrl(r.site) ? `<a href="${safeUrl(r.site)}" target="_blank" rel="noopener">신청 페이지 ›</a>` : ''}</div>`;
   }
+  let expandedPlace = null;
   function renderLeft() {
     const L = $('left');
     if (S.view === 'all') {
@@ -247,7 +246,7 @@
       ${regionInfo(r)}
       <div class="tabs" role="tablist">${cats.map(([k, n]) => `<button type="button" class="tab" role="tab" data-cat="${k}" aria-selected="${S.cat === k}">${n}</button>`).join('')}</div></div>
       <p class="ex">${ps.length}곳 · 겹친 장소는 목록에서 선택할 수 있어요.</p>
-      <div>${ps.length ? ps.map((p) => `<button type="button" class="pitem${S.pid === p.id ? ' on' : ''}" data-p="${esc(p.id)}"><span class="pic" style="background:${CAT[p.category].c}">${CAT[p.category].k}</span><span><span class="nm">${esc(p.name.replace(r.short + ' ', ''))}</span><span class="sub">${esc(p.price_text)} · ${esc(p.access_text)}</span></span></button>`).join('') : '<p class="empty">등록된 장소가 없습니다.</p>'}</div>`;
+      <div>${ps.length ? ps.map((p) => { const open = expandedPlace === p.id, inCart = S.cart.some((c) => c.pid === p.id), url = safeUrl(p.kakao_url); return `<div class="place-row"><div class="place-row-head"><button type="button" class="pitem${open ? ' on' : ''}" data-place-expand="${esc(p.id)}" aria-expanded="${open}"><span class="pic" style="background:${CAT[p.category].c}">${CAT[p.category].k}</span><span><span class="nm">${esc(p.name.replace(r.short + ' ', ''))}</span><span class="sub">${esc(p.price_text)} · ${esc(p.access_text)}</span></span><span class="place-chevron" aria-hidden="true">⌄</span></button><button type="button" class="place-cart${inCart ? ' on' : ''}" data-add="${esc(p.id)}" aria-label="${esc(p.name)} ${inCart ? '장바구니에서 빼기' : '장바구니에 담기'}" aria-pressed="${inCart}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 8h14l-1 11H6L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></button></div>${open ? `<div class="place-details"><p><b>주소</b> ${esc(p.address || p.access_text || '확인 필요')}</p>${p.price == null ? '<p>가격 확인 필요 · 예상 경비에서 제외</p>' : ''}${url ? `<a href="${url}" target="_blank" rel="noopener noreferrer">카카오맵에서 장소 확인 ↗</a>` : ''}</div>` : ''}</div>`; }).join('') : '<p class="empty">등록된 장소가 없습니다.</p>'}</div>`;
   }
   // 장바구니는 '가는 지역'별 바구니로 나눈다
   const groups = () => { const g = {}; S.cart.forEach((c) => { const rid = PM[c.pid].region_id; (g[rid] = g[rid] || []).push(c); }); return g; };
@@ -292,6 +291,7 @@
   const qtyOf = (c) => (PM[c.pid].category === 'stay' ? c.qty : pplOf(c));
   function lineCost(c) {
     const p = PM[c.pid];
+    if (p.price == null) return { amt: 0, f: '가격 확인 필요 · 경비에서 제외' };
     if (p.category === 'stay') { const n = Math.max(1, nights()); return { amt: p.price * n * c.qty, f: `1박 ${won(p.price)} × ${n}박 × 객실 ${c.qty}` }; }
     const q = qtyOf(c);
     if (!p.price) return { amt: 0, f: `무료 · ${q}명` };
@@ -869,7 +869,7 @@
     const i = S.cart.findIndex((c) => c.pid === pid);
     if (i >= 0) S.cart.splice(i, 1);
     else { S.cart.push({ pid, qty: defaultQty(PM[pid]) }); S.basket = PM[pid].region_id; toast(`${RM[PM[pid].region_id].name} 바구니에 담았어요`); }
-    S.route = null; drawRoute(); renderBadge(); renderStack(); renderRoute(); renderOverlay();
+    S.route = null; drawRoute(); renderBadge(); renderStack(); renderRoute(); renderOverlay(); renderLeft();
   }
 
   /* ───────── 휴대폰 시트·탭 ───────── */
@@ -968,6 +968,7 @@
     if (d.f) { S.filter = d.f; renderTop(); renderLeft(); paintTargets(); renderOverlay(); return; }
     if (d.alarm) return toggleAlarm(d.alarm);
     if (d.cat) { S.cat = d.cat; S.pid = null; renderTop(); renderLeft(); renderOverlay(); return record(); }
+    if (d.placeExpand) { const y = $('left').scrollTop; expandedPlace = expandedPlace === d.placeExpand ? null : d.placeExpand; renderLeft(); $('left').scrollTop = y; return; }
     if (d.p) { S.pid = d.p; if (mobile()) setSheet('peek'); renderLeft(); renderOverlay(); return record(); }
     if (t.hasAttribute('data-close')) { S.pid = null; renderLeft(); renderOverlay(); return record(); }
     if (d.add) return toggleCart(d.add);

@@ -565,3 +565,32 @@ button.cmp-h small+.chev{margin-left:8px}
 .marker .ml{display:none}
 .marker.on .ml,.marker:hover .ml,.marker:focus-visible .ml{display:block}
 .marker.on{z-index:2}
+
+.place-row+.place-row{border-top:1px solid var(--line)}
+.place-row-head{display:flex;align-items:flex-start}
+.place-row-head .pitem{flex:1;min-width:0}
+.place-cart{flex:none;display:grid;place-items:center;width:44px;height:44px;border:0;background:transparent;color:var(--muted);border-radius:10px}
+.place-cart svg{width:21px;height:21px}
+.place-cart.on{color:var(--accent);background:var(--accent-soft)}
+.place-details{padding:2px 12px 14px 48px;font-size:12px;line-height:1.55;color:var(--muted)}
+.place-details p{margin:5px 0}
+.place-details b{color:var(--ink)}
+.place-details a{display:inline-block;margin-top:5px;color:var(--accent);font-weight:600}
+
+/* 장소 목록 */
+.place-row{border-bottom:1px solid #e7ece9}
+.place-row+.place-row{border-top:0}
+.place-row-head{align-items:center;gap:4px;padding:5px 0}
+.place-row-head .pitem{grid-template-columns:36px minmax(0,1fr) 18px;gap:12px;min-height:72px;padding:10px 4px;background:transparent}
+.place-row-head .pitem.on{background:transparent}
+.place-row-head .pic{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;font-size:13px}
+.place-row-head .nm{font-size:14px;line-height:1.4}
+.place-row-head .sub{display:block;margin-top:4px;line-height:1.5;overflow-wrap:anywhere}
+.place-chevron{font-size:19px;color:#9aa8a1;transition:transform .2s}
+.pitem.on .place-chevron{transform:rotate(180deg)}
+.place-cart{width:42px;height:42px;border:1px solid #e3eae6;background:#fff;color:#657870;border-radius:14px}
+.place-cart.on{border-color:#b8d1c3;background:#e8f2ec;color:#2f5d50}
+.place-details{margin:0 0 14px 48px;padding:13px 15px;background:#f5f8f6;border-radius:14px;color:#66756d;line-height:1.6}
+.place-details p{margin:0 0 6px}
+.place-details b{display:block;margin-bottom:2px;font-size:11px;color:#829088}
+.place-details a{margin-top:4px;padding:7px 10px;background:#e5efe9;border-radius:9px;text-decoration:none;color:#315f50}

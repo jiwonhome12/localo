@@ -264,6 +264,20 @@ def main():
         place['kakao_url'] = match['place_url']
         verified.append(place)
 
+    # 기존 시트 장소와 카카오 검색 결과가 같은 장소면 카카오 ID로 합친다.
+    known_urls = {p['kakao_url'] for p in verified}
+    for item in load(DATA / 'kakao-places.json'):
+        if item['kakao_url'] in known_urls:
+            continue
+        if item['region_id'] not in geo['regions'] or item['category'] not in ('food', 'cafe', 'stay', 'spot'):
+            errors.append(f"카카오 장소 {item['id']}: 지역 또는 업종 오류")
+            continue
+        x, y = to_xy(proj, item['lat'], item['lng'])
+        verified.append({**item, 'x': x, 'y': y, 'approx': False, 'sample': False,
+                         'price': None, 'price_text': '가격 확인 필요',
+                         'access_text': item['address'], 'capacity': 0, 'merchant': '미확인'})
+        known_urls.add(item['kakao_url'])
+
     if len({p['id'] for p in places + kept}) != len(places) + len(kept):
         errors.append('장소 id가 겹칩니다')
     for w in warnings:

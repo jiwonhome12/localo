@@ -116,8 +116,8 @@
       const r = RM[S.rid];
       GEO.munis.forEach((m) => { if (m.code !== r.code) h += `<span class="nlabel" data-x="${m.cx}" data-y="${m.cy}">${m.name}</span>`; });
       h += `<span class="rlabel" data-x="${r.cx}" data-y="${r.cy}">${r.short}</span>`;
-      placesOf(r.id).forEach((p) => {
-        if (S.cat !== 'all' && p.category !== S.cat) return;
+      const matching = placesOf(r.id).filter((p) => S.cat === 'all' || p.category === S.cat);
+      matching.forEach((p) => {
         const inCart = S.cart.some((c) => c.pid === p.id);
         const ord = S.route ? S.route.indexOf(p.id) : -1;
         h += `<button type="button" class="marker hit${S.pid === p.id ? ' on' : ''}${inCart ? ' in-cart' : ''}" data-p="${p.id}" aria-label="${esc(p.name)}">${ord >= 0 ? `<span class="ord">${ord + 1}</span>` : ''}<span class="mk" style="background:${CAT[p.category].c}"><i>${CAT[p.category].k}</i></span><span class="ml">${esc(p.name.replace(r.short + ' ', ''))}</span></button>`;
@@ -240,13 +240,14 @@
     const r = RM[S.rid];
     const ps = placesOf(r.id).filter((p) => S.cat === 'all' || p.category === S.cat);
     const cats = [['all', '전체'], ...Object.entries(CAT).map(([k, v]) => [k, v.n])];
-    L.innerHTML = `<button type="button" class="back" data-home>← 전국 지도</button>
+    L.innerHTML = `<div class="region-sticky"><button type="button" class="back" data-home>← 전국 지도</button>
       <div class="rcard"><div class="sil">${silhouette(r)}</div>
         <div class="rc-main"><div class="rhead"><h2>${r.name}</h2><span class="pill ${r.status}">${STL[r.status]}</span>${alarmBtn(r)}</div>
         <div class="rsub">${r.sido}</div></div></div>
       ${regionInfo(r)}
-      <div class="tabs" role="tablist">${cats.map(([k, n]) => `<button type="button" class="tab" role="tab" data-cat="${k}" aria-selected="${S.cat === k}">${n}</button>`).join('')}</div>
-      <div>${ps.length ? ps.map((p) => `<button type="button" class="pitem${S.pid === p.id ? ' on' : ''}" data-p="${p.id}"><span class="pic" style="background:${CAT[p.category].c}">${CAT[p.category].k}</span><span><span class="nm">${esc(p.name.replace(r.short + ' ', ''))}</span><span class="sub">${p.price_text} · ${p.access_text}</span></span></button>`).join('') : '<p class="empty">등록된 장소가 없습니다.</p>'}</div>`;
+      <div class="tabs" role="tablist">${cats.map(([k, n]) => `<button type="button" class="tab" role="tab" data-cat="${k}" aria-selected="${S.cat === k}">${n}</button>`).join('')}</div></div>
+      <p class="ex">${ps.length}곳 · 겹친 장소는 목록에서 선택할 수 있어요.</p>
+      <div>${ps.length ? ps.map((p) => `<button type="button" class="pitem${S.pid === p.id ? ' on' : ''}" data-p="${esc(p.id)}"><span class="pic" style="background:${CAT[p.category].c}">${CAT[p.category].k}</span><span><span class="nm">${esc(p.name.replace(r.short + ' ', ''))}</span><span class="sub">${esc(p.price_text)} · ${esc(p.access_text)}</span></span></button>`).join('') : '<p class="empty">등록된 장소가 없습니다.</p>'}</div>`;
   }
   // 장바구니는 '가는 지역'별 바구니로 나눈다
   const groups = () => { const g = {}; S.cart.forEach((c) => { const rid = PM[c.pid].region_id; (g[rid] = g[rid] || []).push(c); }); return g; };
@@ -874,18 +875,19 @@
   /* ───────── 휴대폰 시트·탭 ───────── */
   const sheet = $('sheet');
   function setSheet(state) {
+    state = state === 'peek' ? 'peek' : 'full';
     document.body.dataset.sheet = state;
-    const H = $('mapwrap').parentElement.clientHeight;
-    sheet.style.setProperty('--sheet-h', state === 'peek' ? '' : state === 'half' ? Math.round(H * 0.56) + 'px' : Math.round(H * 0.94) + 'px');
+    sheet.style.setProperty('--sheet-h', state === 'peek' ? '' : '100%');
+    $('handle').setAttribute('aria-label', state === 'peek' ? '목록 펼치기' : '목록 접기');
+    $('handle').setAttribute('aria-expanded', String(state === 'full'));
   }
   let drag = null;
   $('handle').addEventListener('pointerdown', (e) => { drag = { y: e.clientY, h: sheet.offsetHeight, moved: false }; sheet.classList.add('dragging'); $('handle').setPointerCapture(e.pointerId); });
   $('handle').addEventListener('pointermove', (e) => { if (!drag) return; const dy = drag.y - e.clientY; if (Math.abs(dy) > 4) drag.moved = true; sheet.style.setProperty('--sheet-h', Math.max(120, drag.h + dy) + 'px'); });
   $('handle').addEventListener('pointerup', () => {
     if (!drag) return; sheet.classList.remove('dragging');
-    const H = sheet.parentElement.clientHeight, h = sheet.offsetHeight;
-    if (!drag.moved) setSheet({ peek: 'half', half: 'full', full: 'peek' }[document.body.dataset.sheet]);
-    else setSheet(h < H * 0.38 ? 'peek' : h < H * 0.78 ? 'half' : 'full');
+    if (!drag.moved) setSheet(document.body.dataset.sheet === 'peek' ? 'full' : 'peek');
+    else setSheet(sheet.offsetHeight > drag.h ? 'full' : 'peek');
     drag = null;
   });
   // 화면 위에 여는 패널: trip(장바구니) · my(마이) · community(커뮤니티). null = 지도
@@ -1121,7 +1123,7 @@
     if (k === 'region') openRegion('geochang');
     if (k === 'pop') { openRegion('geochang'); setTimeout(() => { S.pid = pick('geochang', 'food'); renderLeft(); renderOverlay(); }, 760); }
     if (k === 'trip') openTrip(true);
-    if (k === 'sheet') setSheet('half');
+    if (k === 'sheet') setSheet('full');
     if (k === 'route') { S.cart = cartOf([pick('geochang', 'stay'), pick('geochang', 'food'), pick('geochang', 'cafe'), pick('geochang', 'spot', 1), pick('geochang', 'food', 1)]); renderAll(); toggleRoute(); }
   };
 })();

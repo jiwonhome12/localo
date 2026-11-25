@@ -7,7 +7,8 @@
 | `localo.json` | 시트 '신청·환급' 25곳, '식당' 125곳. 열 이름과 원문 값을 그대로 보존 | `scripts/sync_sheet.py` |
 | `data/regions.json` | 지역 신청 상태, 신청 안내, 환급 규칙 | `scripts/build_data.py` |
 | `data/places.json` | 카카오 장소 검색에서 상호와 지역이 일치한 장소 | `scripts/build_data.py` |
-| `data/kakao-verified.json` | 확인된 카카오 장소 ID·주소·좌표 | `scripts/verify_kakao.py` |
+| `data/kakao-verified.json` | 기존 시트 후보 중 확인된 카카오 장소 | `scripts/verify_kakao.py` |
+| `data/kakao-places.json` | 지역·업종별 카카오 검색 결과 | `scripts/collect_kakao_places.py` |
 | `data/places-verified.json` | 공식 출처를 확인한 숙박·관광지 원본 | 직접 조사·수정 |
 | `data/geocode-cache.json` | 브이월드(국토교통부) 주소 검색으로 찾은 식당 좌표 | `scripts/geocode.py` |
 | `data/region-extras.json` | 관광주민증 혜택(★), 상·하반기 구분. 시트에 없는 시제품 값이라 확인 필요 | 직접 수정 |
@@ -34,6 +35,7 @@ pip install -r scripts/requirements.txt
 python scripts/sync_sheet.py --api            # 시트에서 바로 (서비스 계정 키 필요)
 python scripts/sync_sheet.py --xlsx 시트.xlsx  # 내려받은 엑셀로 (python import_workbook.py 시트.xlsx 도 동작)
 python scripts/geocode.py                     # 선택, VWORLD_API_KEY 필요
+python scripts/collect_kakao_places.py       # 선택, 카카오 REST API 키 필요
 python scripts/build_data.py                  # 화면 데이터 만들기·검증
 ```
 
@@ -53,3 +55,5 @@ python scripts/build_data.py                  # 화면 데이터 만들기·검�
 - 고흥군: 최소 소비 칸에 한도 설명('20만원 소비 시 최대 10만원')이 들어 있어 계산에 못 써요.
 - 식당 125곳 모두 가맹점 여부가 '미확인'이에요. 환급은 가맹점 결제만 인정돼요.
 - 일부 메뉴 가격은 2인 기준이에요(예: 모듬회 2인). 화면은 1인 단가로 계산해요.
+
+카카오 검색은 지역과 업종별 키워드에 대해 최대 3페이지를 수집하며 전체 장소 목록이 아닙니다. 장소 등록만 확인했으며 영업 여부, 가격, 환급·방문 인증 대상 여부는 확인되지 않았습니다.

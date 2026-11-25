@@ -264,6 +264,8 @@ body.zoomed .target.sel{fill:#fff;stroke:var(--accent);stroke-width:2px;filter:d
   /* 아래 시트 */
   .panel.left{position:absolute;left:0;right:0;bottom:0;height:var(--sheet-h,var(--peek));z-index:10;border:0;border-radius:18px 18px 0 0;box-shadow:0 -6px 24px rgba(29,39,37,.10);transition:height .28s cubic-bezier(.2,.8,.2,1)}
   .panel.left.dragging{transition:none}
+  body[data-sheet="full"] .panel.left{border-radius:0;box-shadow:none}
+  body[data-sheet="full"] .region-sticky{position:sticky;top:-4px;z-index:2;background:var(--bg);max-height:60vh;overflow-y:auto;padding-top:4px;overscroll-behavior:contain}
   .sheet-handle{display:flex;justify-content:center;align-items:center;height:22px;border:0;background:none;flex:none;cursor:grab;touch-action:none}
   .sheet-handle::before{content:"";width:40px;height:4px;border-radius:9px;background:#d5dbd8}
   .panel.left .p-scroll{padding-top:4px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -557,3 +559,9 @@ button.cmp-h small+.chev{margin-left:8px}
 .crumb{min-height:44px;height:auto;padding:0 14px 0 0}
 .crumb button{min-width:56px;min-height:44px;padding:0 12px;color:var(--ink);font-weight:600}
 .back{min-height:44px;padding:0 12px;margin-left:-12px;font-size:14px}
+
+/* 장소 목록과 지도 마커 구분 */
+.pitem + .pitem{border-top:1px solid var(--line);border-radius:0}
+.marker .ml{display:none}
+.marker.on .ml,.marker:hover .ml,.marker:focus-visible .ml{display:block}
+.marker.on{z-index:2}

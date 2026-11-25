@@ -150,7 +150,6 @@ def main():
     extras = load(DATA / 'region-extras.json')
     cache_path = DATA / 'geocode-cache.json'
     cache = load(cache_path) if cache_path.exists() else {}
-    samples = load(DATA / 'places.sample.json')
     proj = geo['projection']
     if src.get('schemaVersion') != 1:
         sys.exit('localo.json schemaVersion 1만 지원합니다')
@@ -229,7 +228,7 @@ def main():
             need_spot.setdefault(rid, []).append(place)
         places.append(place)
 
-    kept = [p for p in samples if p['category'] in ('stay', 'spot')]  # 숙박·관광지는 아직 예시
+    kept = []  # 확인되지 않은 예시 장소는 화면 데이터에 포함하지 않는다
     for rid, group in need_spot.items():
         taken = [(p['x'], p['y']) for p in places + kept if p['region_id'] == rid and 'x' in p]
         for place, (x, y) in zip(group, spread(geo['regions'][rid], len(group), taken)):
@@ -259,7 +258,7 @@ def main():
     write(DATA / 'regions.json', regions)
     write(DATA / 'places.json', places + kept)
     approx = sum(1 for p in places if p['approx'])
-    print(f'regions.json {len(regions)}곳 · places.json 식당·카페 {len(places)}곳(위치 근사 {approx}곳) + 예시 숙박·관광지 {len(kept)}곳')
+    print(f'regions.json {len(regions)}곳 · places.json 식당·카페 {len(places)}곳(위치 근사 {approx}곳)')
 
 
 if __name__ == '__main__':

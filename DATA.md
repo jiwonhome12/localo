@@ -6,11 +6,11 @@
 | --- | --- | --- |
 | `localo.json` | 시트 '신청·환급' 25곳, '식당' 125곳. 열 이름과 원문 값을 그대로 보존 | `scripts/sync_sheet.py` |
 | `data/regions.json` | 지역 신청 상태, 신청 안내, 환급 규칙 | `scripts/build_data.py` |
-| `data/places.json` | 식당·카페는 실데이터, 숙박·관광지는 아직 예시(`sample: true`) | `scripts/build_data.py` |
+| `data/places.json` | 수집된 실제 식당·카페만 표시 | `scripts/build_data.py` |
 | `data/geocode-cache.json` | 브이월드(국토교통부) 주소 검색으로 찾은 식당 좌표 | `scripts/geocode.py` |
 | `data/region-extras.json` | 관광주민증 혜택(★), 상·하반기 구분. 시트에 없는 시제품 값이라 확인 필요 | 직접 수정 |
 | `data/geo.json` | 통계청 행정구역 경계(지도) | — |
-| `data/places.sample.json` | 화면 설계용 예시 장소. 숙박·관광지만 계속 사용 | — |
+| `data/places.sample.json` | 화면 설계용 예시 데이터(앱에 표시하지 않음) | — |
 
 ## 자동 동기화 (GitHub Actions)
 

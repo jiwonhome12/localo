@@ -1,7 +1,7 @@
 /* 로컬로 웹앱 — 지도 API 없이 행정경계 SVG로 그린 반값여행 지도
    data/geo.json          : 시군구 경계 경로(crawler/build_geo.py 로 생성)
    data/regions.json      : 25개 지역 신청 상태·환급 규칙(scripts/build_data.py 가 수집 시트에서 생성)
-   data/places.json       : 식당·카페는 수집 시트 실데이터, 숙박·관광지는 아직 예시(sample:true) */
+   data/places.json       : 수집 시트의 실제 장소 데이터 */
 (async function () {
   const $ = (id) => document.getElementById(id);
   const svg = $('svg'), overlay = $('overlay'), wrap = $('mapwrap');
@@ -24,8 +24,8 @@
   // 지역 = 상태 + 지리 정보
   const R = REG.map((r) => ({ ...r, ...GEO.regions[r.id], short: r.name.slice(0, -1), name: r.name, sido: r.sido }));
   const RM = Object.fromEntries(R.map((r) => [r.id, r]));
-  const PM = Object.fromEntries(PLACES.map((p) => [p.id, p]));
-  const placesOf = (rid) => PLACES.filter((p) => p.region_id === rid);
+  const PM = Object.fromEntries(PLACES.filter((p) => !p.sample).map((p) => [p.id, p]));
+  const placesOf = (rid) => PLACES.filter((p) => !p.sample && p.region_id === rid);
   // 거창군 반값여행 상품권 공식 사용처 목록에서 확인한 일부 식당 후보(2026-11-25).
   const GEOCHANG_MERCHANTS = [
     ['단골식당', '거창군 거창읍 중앙로 140'],
@@ -63,7 +63,8 @@
   // 로그인이 필요한 기능: 로그인 안 했으면 마이 탭으로 보내고 false
   function needLogin(what) {
     if (DB.user) return true;
-    toast(`${what}은 로그인 후 사용할 수 있어요`); openPanel('my'); return false;
+    if (window.confirm(`${what} 기능을 사용하려면 로그인이 필요해요. 로그인 화면으로 이동할까요?`)) openPanel('my');
+    return false;
   }
 
   /* ───────── SVG 그리기 ───────── */
@@ -180,7 +181,7 @@
       pop.style.left = L2 + 'px'; pop.style.top = Math.max(56, Math.min(h - ph - 8, T)) + 'px';
     }
   }
-  const safeUrl = (u) => (/^https?:\/\//.test(u || '') ? esc(u) : '');
+  const safeUrl = (u) => { try { const url = new URL(u); return /^https?:$/.test(url.protocol) && !/(^|\.)matple\.com$/i.test(url.hostname) ? esc(u) : ''; } catch { return ''; } };
   function popHTML(p) {
     const r = RM[p.region_id], inCart = S.cart.some((c) => c.pid === p.id);
     const rows = p.sample
@@ -276,7 +277,7 @@
       ${regionInfo(r)}
       ${r.id === 'geochang' && (S.cat === 'all' || S.cat === 'food') ? `<section class="official-places"><h3>거창 반값여행 공식 사용처</h3><p>공식 목록 중 일부 · 2026.11.25 확인<br>방문 전 영업 및 상품권 결제 가능 여부를 확인해 주세요.</p><a href="https://geochangtour.kr/uses" target="_blank" rel="noopener">전체 공식 사용처 보기 ↗</a>${GEOCHANG_MERCHANTS.map((p, i) => `<div class="official-place"><b>${esc(p[0])}</b><p>${esc(p[1])}</p><button type="button" class="btn3" data-official-kakao="${i}">카카오맵 위치 확인</button><div class="kakao-results" aria-live="polite"></div></div>`).join('')}</section>` : ''}
       <div class="tabs" role="tablist">${cats.map(([k, n]) => `<button type="button" class="tab" role="tab" data-cat="${k}" aria-selected="${S.cat === k}">${n}</button>`).join('')}</div>
-      <div>${ps.map((p) => `<button type="button" class="pitem${S.pid === p.id ? ' on' : ''}" data-p="${p.id}"><span class="pic" style="background:${CAT[p.category].c}">${CAT[p.category].k}</span><span><span class="nm">${esc(p.name.replace(r.short + ' ', ''))}</span><span class="sub">${p.price_text} · ${p.access_text}</span></span></button>`).join('')}</div>`;
+      <div>${ps.length ? ps.map((p) => `<button type="button" class="pitem${S.pid === p.id ? ' on' : ''}" data-p="${p.id}"><span class="pic" style="background:${CAT[p.category].c}">${CAT[p.category].k}</span><span><span class="nm">${esc(p.name.replace(r.short + ' ', ''))}</span><span class="sub">${p.price_text} · ${p.access_text}</span></span></button>`).join('') : '<p class="empty">등록된 장소가 없습니다.</p>'}</div>`;
   }
   // 장바구니는 '가는 지역'별 바구니로 나눈다
   const groups = () => { const g = {}; S.cart.forEach((c) => { const rid = PM[c.pid].region_id; (g[rid] = g[rid] || []).push(c); }); return g; };
@@ -776,6 +777,7 @@
     renderSearch(); renderDraft();
   }
   async function postArticle(btn) {
+    if (!needLogin('글쓰기')) return;
     const rid = $('pRid').value, title = $('pTitle').value.trim(), memo = $('pMemo').value.trim();
     if (!title) { toast('제목을 적어 주세요'); return $('pTitle').focus(); }
     if (!memo && !draft.length) { toast('본문이나 사진을 넣어 주세요'); return $('pMemo').focus(); }
@@ -797,6 +799,7 @@
     DB.posts.unshift(post); save(); clearDraft(); writing = false; cFilter = rid; renderCommunity(); toast('글을 올렸어요');
   }
   function takeCourse(id) {
+    if (!needLogin('코스 담기')) return;
     const p = allPosts().find((x) => x.id === id); if (!p) return;
     p.ids.filter((pid) => PM[pid] && !S.cart.some((c) => c.pid === pid)).forEach((pid) => S.cart.push({ pid, qty: defaultQty(PM[pid]) }));
     S.order[p.rid] = p.ids.slice(); S.basket = p.rid; S.route = null; renderAll();
@@ -841,7 +844,7 @@
       if (S.view !== 'all') goHome(); else { S.pid = null; renderLeft(); renderOverlay(); }
     } else {
       const moved = S.view !== 'region' || S.rid !== s.rid;
-      S.view = 'region'; S.rid = s.rid; S.cat = s.cat; S.pid = s.pid;
+      S.view = 'region'; S.rid = s.rid; S.cat = s.cat; S.pid = PM[s.pid] ? s.pid : null;
       renderAll();
       if (moved) { animateVB(fitBox(RM[s.rid].bbox), 700, placeOverlay); $('left').scrollTop = 0; }
     }
@@ -892,6 +895,7 @@
     addEventListener('pointerup', mouse((e) => end(e.clientX, e.clientY, true)));
   }
   function toggleCart(pid) {
+    if (!needLogin('장소 담기')) return;
     const i = S.cart.findIndex((c) => c.pid === pid);
     if (i >= 0) S.cart.splice(i, 1);
     else { S.cart.push({ pid, qty: defaultQty(PM[pid]) }); S.basket = PM[pid].region_id; toast(`${RM[PM[pid].region_id].name} 바구니에 담았어요`); }
@@ -1021,6 +1025,7 @@
     if (d.openPost) { opened[d.openPost] = !opened[d.openPost]; return renderCommunity(); }
     if (d.draftRm) { const [x] = draft.splice(+d.draftRm, 1); if (x) URL.revokeObjectURL(x.url); return renderDraft(); }
     if (d.like) {
+      if (!needLogin('좋아요')) return;
       const id = d.like, post = allPosts().find((x) => x.id === id);
       if (CLOUD && post && !post.sample) { // 서버 글: 로그인 필요
         if (!needLogin('좋아요')) return;
@@ -1124,7 +1129,7 @@
   // 첫 화면: 예시 장바구니를 담아 계산 기능이 보이게
   const pick = (rid, cat, i = 0) => (placesOf(rid).filter((p) => p.category === cat)[i] || {}).id;
   const cartOf = (ids) => ids.filter(Boolean).map((pid) => ({ pid, qty: defaultQty(PM[pid]) }));
-  S.cart = cartOf([pick('geochang', 'food'), pick('geochang', 'stay'), pick('geochang', 'cafe'), pick('hamyang', 'food')]); S.basket = 'geochang';
+  S.cart = []; S.basket = 'all';
   if (CLOUD) {
     Object.assign(DB, { user: null, alarms: {}, trips: [], posts: [], likes: {} });
     let first = true;

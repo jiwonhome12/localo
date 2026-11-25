@@ -80,6 +80,10 @@ def build_payload(tabs, source):
         if fields.get('지자체') not in region_ids:
             raise ValueError(f"식당 탭 {row}행: 신청·환급 탭에 없는 지자체 '{fields.get('지자체')}'")
         fields = {k: v for k, v in fields.items() if k not in DROP_PLACE_FIELDS}
+        from urllib.parse import urlparse
+        host = (urlparse(str(fields.get('출처 URL') or '')).hostname or '').lower()
+        if host == 'matple.com' or host.endswith('.matple.com'):
+            fields['출처 URL'] = ''
         key = '|'.join(str(fields.get(name) or '') for name in ['지자체', '식당명', '주소'])
         places.append({'id': hashlib.sha256(key.encode()).hexdigest()[:16],
                        'regionId': fields['지자체'], 'sourceRow': row, 'fields': fields,

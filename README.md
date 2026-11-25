@@ -83,15 +83,16 @@
 빌드 없이 정적 파일로 동작합니다. 저장소 폴더에서 로컬 서버를 띄우고 브라우저로 엽니다.
 
 ```sh
-python -m http.server 8000
-# http://localhost:8000 열기
+python scripts/serve.py
+# http://localhost:8765 열기
 ```
 
-`index.html`(폰 틀 미리보기)이나 `app.html`(앱)을 더블클릭해 파일로 열면 브라우저가 데이터 파일 읽기를 막아 지도가 뜨지 않습니다. 배포는 Vercel(프레임워크 없음, 빌드 명령 비움)이나 GitHub Pages에 저장소 루트를 그대로 올리면 됩니다.
+`index.html`이나 `app.html`을 더블클릭해 파일로 열면 브라우저가 데이터 파일 읽기를 막아 지도가 뜨지 않습니다. 장소 실시간 검색은 `.env`의 `KAKAO_REST_API_KEY`와 위 로컬 서버가 필요합니다. Vercel에는 같은 이름의 환경 변수를 설정해야 합니다. GitHub Pages에서는 서버 함수가 실행되지 않아 카카오 검색이 동작하지 않습니다.
 
 | 폴더·파일 | 역할 |
 | --- | --- |
-| `index.html` | 첫 화면: 아이폰 16 Pro 틀 안에서 앱 실행. 실제 휴대폰으로 열면 `app.html`로 바로 이동 |
+| `index.html` | 앱으로 이동 |
+| `preview.html` | 아이폰 틀 미리보기 |
 | `app.html`, `styles.css`, `app.js` | 앱 화면 (아티팩트에서 옮김) |
 | `data/` | 지도 경계와 화면용 데이터 |
 | `scripts/` | 시트 동기화(`sync_sheet.py`), 좌표 찾기(`geocode.py`), 화면 데이터 만들기·검증(`build_data.py`) |

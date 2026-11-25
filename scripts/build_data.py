@@ -11,6 +11,7 @@ import math
 import re
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / 'data'
@@ -27,6 +28,12 @@ def load(path):
 
 def text(value):
     return '' if value is None else str(value).strip()
+
+
+def source_url(value):
+    url = text(value)
+    host = (urlparse(url).hostname or '').lower()
+    return '' if host == 'matple.com' or host.endswith('.matple.com') else url
 
 
 def field(fields, prefix):
@@ -210,7 +217,7 @@ def main():
             'price_text': f"{menu} {price:,}원" if price else (menu or '가격 확인 필요'),
             'access_text': short or '주소 확인 필요', 'capacity': 0,
             'menu': menu, 'address': address,
-            'source_url': text(f.get('출처 URL')), 'note': text(f.get('메모')),
+            'source_url': source_url(f.get('출처 URL')), 'note': text(f.get('메모')),
             'merchant': merchant, 'source_row': item['sourceRow'], 'sample': False,
         }
         hit = cache.get(item['id'])

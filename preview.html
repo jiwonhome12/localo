@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>로컬로</title>
+<meta name="description" content="반값여행 지역의 신청 일정·식당·숙박·카페를 한 지도에서 보고 여행 경비와 환급액을 미리 계산하는 웹앱">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* 아이폰 16 Pro 기준: 화면 402×874pt, 위 안전영역 62, 아래 34, 다이내믹 아일랜드 126×37 */
+:root{
+  --W:402px; --H:874px; --safe-top:62px; --safe-bottom:34px; --bezel:13px; --screen-r:56px;
+  --bg:#e9eeec; --ink:#1d2725; --muted:#66726e; --line:#d5ddda; --accent:#2f5d50;
+  --frame:#8d8b86; --frame-hi:#c9c6bf; --frame-lo:#5d5b57;
+  font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:16px}
+/* 폰: 바깥 프레임 → 베젤(검정) → 화면 */
+.stage{flex:none;width:calc(var(--W) + var(--bezel) * 2 + 8px);height:calc(var(--H) + var(--bezel) * 2 + 8px);transform-origin:center}
+.phone{position:relative;width:100%;height:100%;border-radius:calc(var(--screen-r) + var(--bezel) + 4px);padding:4px;
+  background:linear-gradient(145deg,var(--frame-hi),var(--frame) 30%,var(--frame-lo) 70%,var(--frame-hi));
+  box-shadow:0 30px 60px rgba(29,39,37,.28),0 8px 18px rgba(29,39,37,.18)}
+.bezel{width:100%;height:100%;border-radius:calc(var(--screen-r) + var(--bezel));background:#0b0b0c;padding:var(--bezel)}
+.screen{position:relative;width:var(--W);height:var(--H);border-radius:var(--screen-r);overflow:hidden;background:#fff}
+/* 옆 버튼 */
+.key{position:absolute;width:4px;border-radius:2px;background:linear-gradient(90deg,var(--frame-lo),var(--frame-hi))}
+.key.action{left:-3px;top:150px;height:34px}
+.key.vup{left:-3px;top:212px;height:62px}
+.key.vdn{left:-3px;top:290px;height:62px}
+.key.power{right:-3px;top:250px;height:96px}
+.key.cam{right:-3px;top:420px;height:58px;border-radius:3px}
+
+.status{position:absolute;inset:0 0 auto;height:var(--safe-top);display:flex;align-items:center;justify-content:space-between;padding:6px 34px 0 46px;font-size:16px;font-weight:600;color:#000;z-index:2;background:#fff;letter-spacing:-.01em}
+.status .right{display:flex;align-items:center;gap:6px}
+.status svg{display:block}
+.island{position:absolute;top:11px;left:50%;width:126px;height:37px;margin-left:-63px;border-radius:20px;background:#000;z-index:3}
+.app{position:absolute;left:0;top:var(--safe-top);width:var(--W);height:calc(var(--H) - var(--safe-top) - var(--safe-bottom));border:0;display:block;background:#fff}
+.home-area{position:absolute;inset:auto 0 0;height:var(--safe-bottom);background:#fff;z-index:2}
+.home-bar{position:absolute;bottom:8px;left:50%;width:140px;height:5px;margin-left:-70px;border-radius:3px;background:#111;z-index:3}
+
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <div class="phone">
+    <span class="key action"></span><span class="key vup"></span><span class="key vdn"></span><span class="key power"></span><span class="key cam"></span>
+    <div class="bezel">
+      <div class="screen">
+        <div class="status" aria-hidden="true">
+          <span id="clock">9:41</span>
+          <span class="right">
+            <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="#000" stroke-width="1.9" stroke-linecap="round"><path d="M1.5 4.3a9.5 9.5 0 0 1 13 0"/><path d="M4 7a6 6 0 0 1 8 0"/><circle cx="8" cy="10" r="1.2" fill="#000" stroke="none"/></svg>
+            <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.6" fill="none" stroke="#000" stroke-opacity=".4"/><rect x="2" y="2" width="18" height="9" rx="2.2"/><path d="M25 4.5v4c.9-.3 1.5-1.1 1.5-2s-.6-1.7-1.5-2Z" fill-opacity=".45"/></svg>
+          </span>
+        </div>
+        <div class="island"></div>
+        <iframe class="app" id="app" src="app.html" title="로컬로 앱"></iframe>
+        <div class="home-area"></div>
+        <div class="home-bar"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 실제 휴대폰(좁은 화면 + 터치)으로 열면 폰 틀 없이 앱으로 바로 간다
+  if (matchMedia('(max-width: 600px) and (pointer: coarse)').matches) location.replace('app.html' + location.search + location.hash);
+  // 메일 로그인 링크로 돌아오면(#access_token… 또는 ?code=…) 그 값을 폰 안 앱으로 넘기고 주소창은 깨끗하게
+  if (location.hash || location.search) {
+    document.getElementById('app').src = 'app.html' + location.search + location.hash;
+    history.replaceState(null, '', location.pathname);
+  }
+  const stage = document.getElementById('stage');
+  function scale() {
+    const k = Math.min(1, (innerHeight - 32) / stage.offsetHeight, (innerWidth - 32) / stage.offsetWidth);
+    stage.style.transform = `scale(${k})`;
+    stage.style.margin = `${(stage.offsetHeight * (k - 1)) / 2}px ${(stage.offsetWidth * (k - 1)) / 2}px`;
+  }
+  addEventListener('resize', scale); scale();
+  const clock = document.getElementById('clock');
+  const tick = () => { const d = new Date(); clock.textContent = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`; };
+  tick(); setInterval(tick, 15000);
+</script>
+</body>
+</html>

@@ -546,3 +546,9 @@ button.cmp-h .chev{margin-left:auto;font-size:18px;line-height:1;color:var(--mut
 button.cmp-h small+.chev{margin-left:8px}
 .c-head p:empty{display:none}
 .c-head{justify-content:flex-end}
+.official-places { margin: 16px 0; padding: 14px; border: 1px solid #d8ded8; border-radius: 12px; background: #fff; }
+.official-places h3 { margin: 0 0 6px; font-size: 15px; }
+.official-places > p, .official-place p { margin: 4px 0 8px; font-size: 12px; line-height: 1.5; }
+.official-place { padding: 12px 0; border-top: 1px solid #e8ece8; }
+.official-place:first-of-type { margin-top: 12px; }
+.official-place .kakao-results p { margin: 8px 0; }

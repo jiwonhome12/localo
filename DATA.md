@@ -25,6 +25,8 @@
 
 ## 직접 실행
 
+장소 카드의 카카오맵 검색은 `.env`에 `KAKAO_REST_API_KEY`를 설정한 뒤 `python scripts/serve.py`로 실행해요. 결과는 실시간 표시만 하며 카카오 장소명·주소·좌표를 데이터 파일에 저장하지 않아요. 후보 주소를 직접 확인해야 합니다. 카카오 검색은 메뉴 가격이나 후기를 제공하지 않으므로 기존 가격의 신뢰도가 자동으로 검증되지는 않습니다.
+
 ```sh
 pip install -r scripts/requirements.txt
 python scripts/sync_sheet.py --api            # 시트에서 바로 (서비스 계정 키 필요)

@@ -1,4 +1,4 @@
-const CACHE = 'localo-v3';
+const CACHE = 'localo-v4';
 const ASSETS = [
   './', './index.html', './app.html', './styles.css', './app.js', './cloud.js', './pwa.js',
   './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png',

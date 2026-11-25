@@ -87,11 +87,11 @@ python -m http.server 8000
 # http://localhost:8000 열기
 ```
 
-`index.html`(폰 틀 미리보기)이나 `app.html`(앱)을 더블클릭해 파일로 열면 브라우저가 데이터 파일 읽기를 막아 지도가 뜨지 않습니다. 배포는 Vercel(프레임워크 없음, 빌드 명령 비움)이나 GitHub Pages에 저장소 루트를 그대로 올리면 됩니다.
+`index.html`이나 `app.html`을 더블클릭해 파일로 열면 브라우저가 데이터 파일 읽기를 막아 지도가 뜨지 않습니다. 배포는 Vercel(프레임워크 없음, 빌드 명령 비움)이나 GitHub Pages에 저장소 루트를 그대로 올리면 됩니다.
 
 | 폴더·파일 | 역할 |
 | --- | --- |
-| `index.html` | 첫 화면: 아이폰 16 Pro 틀 안에서 앱 실행. 실제 휴대폰으로 열면 `app.html`로 바로 이동 |
+| `index.html` | 접속 시 화면 크기에 맞는 앱 화면으로 이동 |
 | `app.html`, `styles.css`, `app.js` | 앱 화면 (아티팩트에서 옮김) |
 | `data/` | 지도 경계와 화면용 데이터 |
 | `scripts/` | 시트 동기화(`sync_sheet.py`), 좌표 찾기(`geocode.py`), 화면 데이터 만들기·검증(`build_data.py`) |

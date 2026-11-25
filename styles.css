@@ -552,3 +552,8 @@ button.cmp-h small+.chev{margin-left:8px}
 .official-place { padding: 12px 0; border-top: 1px solid #e8ece8; }
 .official-place:first-of-type { margin-top: 12px; }
 .official-place .kakao-results p { margin: 8px 0; }
+
+/* 지역 지도 조작 */
+.crumb{min-height:44px;height:auto;padding:0 14px 0 0}
+.crumb button{min-width:56px;min-height:44px;padding:0 12px;color:var(--ink);font-weight:600}
+.back{min-height:44px;padding:0 12px;margin-left:-12px;font-size:14px}

@@ -575,16 +575,21 @@
     try {
       if (signup) {
         const r = await CLOUD.signUp(email, pw);
-        if (r.needConfirm) { linkSent = email; loginErr = ''; renderMy(); toast('확인 메일을 보냈어요. 메일의 링크를 누르면 가입이 끝나요'); return; }
+        if (r.needConfirm) { linkSent = email; loginErr = ''; renderMy(); toast('인증 메일을 보냈어요. 메일 속 숫자 코드를 넣으면 가입이 끝나요'); setTimeout(() => $('loginCode') && $('loginCode').focus(), 50); return; }
       } else await CLOUD.signIn(email, pw);
     } catch (e) {
       console.warn(e); btn.disabled = false; btn.textContent = label;
       const m = e.message || '';
+      if (!signup && /not confirmed/i.test(m)) { // 가입 확인을 안 끝낸 계정: 확인 메일을 다시 보내고 코드 입력 화면으로
+        try { await CLOUD.resendConfirm(email); linkSent = email; loginErr = ''; renderMy(); return toast('가입 확인이 아직 안 끝났어요. 확인 메일을 다시 보냈어요'); }
+        catch (e2) { console.warn(e2); return toast('가입 확인 메일의 링크를 먼저 눌러 주세요 · ' + (e2.message || '')); }
+      }
       toast(/Invalid login/i.test(m) ? '이메일 또는 비밀번호가 맞지 않아요. 처음이면 가입하기를 눌러 주세요'
         : /already registered|already been registered/i.test(m) ? '이미 가입한 이메일이에요. 로그인을 눌러 주세요'
         : /not confirmed/i.test(m) ? '가입 확인 메일의 링크를 먼저 눌러 주세요'
-        : /rate|seconds/i.test(m) ? '너무 자주 시도했어요. 잠시 후 다시 해 주세요'
-        : /password/i.test(m) ? '비밀번호가 너무 약해요. 더 길게 만들어 주세요' : '로그인하지 못했어요. 잠시 후 다시 해 주세요');
+        : /not authorized/i.test(m) ? '이 주소로는 확인 메일을 보낼 수 없어요(서버 메일 설정 필요)'
+        : /rate|seconds/i.test(m) ? '메일·시도 횟수 제한에 걸렸어요. 잠시 후 다시 해 주세요'
+        : /password/i.test(m) ? '비밀번호가 너무 약해요. 더 길게 만들어 주세요' : '로그인하지 못했어요 · ' + (m || '네트워크 오류'));
     }
   }
   async function emailLogin(btn) {
@@ -593,7 +598,9 @@
     btn.disabled = true; btn.textContent = '보내는 중…';
     try { await CLOUD.sendLink(email); linkSent = email; loginErr = ''; renderMy(); setTimeout(() => $('loginCode') && $('loginCode').focus(), 50); }
     catch (e) { console.warn(e); btn.disabled = false; btn.textContent = '로그인 링크 받기';
-      toast(/rate|seconds/i.test(e.message || '') ? '메일을 너무 자주 요청했어요. 잠시 후 다시 해 주세요' : '메일을 보내지 못했어요. 주소를 확인해 주세요'); }
+      const m = e.message || '';
+      toast(/rate|seconds/i.test(m) ? '메일을 너무 자주 요청했어요. 잠시 후 다시 해 주세요'
+        : /not authorized/i.test(m) ? '이 주소로는 메일을 보낼 수 없어요(서버 메일 설정 필요)' : '메일을 보내지 못했어요 · ' + (m || '네트워크 오류')); }
   }
   async function saveNick(btn) {
     const n = ($('nickName').value || '').trim();
@@ -815,7 +822,7 @@
     record();
   }
   // 전국 지도(메인)로 돌아올 때마다 ㄹㅋ 마크가 한반도로 바뀌는 인트로를 다시 보여 준다
-  function goHome() { S.view = 'all'; S.rid = null; S.pid = null; vb = VB0.slice(); svg.setAttribute('viewBox', vb.join(' ')); renderAll(); playIntro(); record(); }
+  function goHome() { cancelAnimationFrame(anim); S.view = 'all'; S.rid = null; S.pid = null; vb = VB0.slice(); svg.setAttribute('viewBox', vb.join(' ')); renderAll(); playIntro(); record(); }
 
   /* ───────── 화면 기록: 로고·뒤로가기 제스처로 직전 화면 복원 ───────── */
   let restoring = false;
@@ -1031,6 +1038,7 @@
     if (d.cmpR) { if (mobile()) { restoring = true; openPanel(null); restoring = false; } return openRegion(d.cmpR); }
     if (d.basket) { S.basket = d.basket; S.route = null; drawRoute(); renderStack(); renderRoute(); renderOverlay(); return; }
     if (t.hasAttribute('data-route')) return toggleRoute();
+    if (d.tab === 'map' && t.closest('.tabbar')) return goMain();
     if (d.tab) { const was = S.panel; openPanel(d.tab === 'map' ? null : d.tab); if (d.tab === 'map' && was && was !== 'trip' && S.view === 'all') playIntro(); return; }
     if (d.soon) return toast(`${d.soon}은 다음 단계에서 열려요`);
   });
@@ -1134,7 +1142,6 @@
   history.replaceState({ ...snap(), i: 0 }, '');
 
   // 홈 화면 설치(PWA) — 지원되는 곳에서만
-  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 
   // 화면 캡처·발표용 상태 전환
   window.__demo = (k) => {

@@ -21,6 +21,7 @@
 
   const BUCKET = 'post-images';
   const PUB = URL + '/storage/v1/object/public/' + BUCKET + '/';
+  const back = () => new window.URL('./', location.href.replace(/[?#].*$/, '')).href; // 메일 링크가 돌아올 주소(첫 화면)
   const rand = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
   window.LocaloCloud = {
@@ -31,18 +32,24 @@
     async session() { const { data } = await sb.auth.getSession(); me = data.session ? data.session.user.id : null; return data.session ? data.session.user : null; },
     // 이메일로 로그인 링크 보내기. 링크를 누르면 첫 화면(index.html)으로 돌아와 로그인된다
     async sendLink(email) {
-      const back = new window.URL('./', location.href.replace(/[?#].*$/, '')).href;
-      must(await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: back } }));
+      must(await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: back() } }));
     },
     // 이메일 + 비밀번호
     async signIn(email, password) { must(await sb.auth.signInWithPassword({ email, password })); },
     // 가입: 대시보드에서 'Confirm email'을 끄면 바로 로그인된다(켜져 있으면 확인 메일을 눌러야 함 → needConfirm)
     async signUp(email, password) {
-      const data = must(await sb.auth.signUp({ email, password }));
+      // 확인 메일 링크도 이 앱으로 돌아오게(없으면 대시보드의 Site URL로 가서 '페이지를 열 수 없음'이 된다)
+      const data = must(await sb.auth.signUp({ email, password, options: { emailRedirectTo: back() } }));
       return { needConfirm: !data.session };
     },
     // 메일 속 숫자 코드로 로그인(링크가 안 열릴 때·다른 기기에서 메일을 볼 때)
-    async verifyCode(email, token) { must(await sb.auth.verifyOtp({ email, token, type: 'email' })); },
+    // 가입 확인 메일의 코드는 type 'signup' 이라 'email'로 실패하면 한 번 더 시도한다
+    async verifyCode(email, token) {
+      const r = await sb.auth.verifyOtp({ email, token, type: 'email' });
+      if (r.error) must(await sb.auth.verifyOtp({ email, token, type: 'signup' }));
+    },
+    // 가입 확인 메일 다시 보내기
+    async resendConfirm(email) { must(await sb.auth.resend({ type: 'signup', email, options: { emailRedirectTo: back() } })); },
     // 로그인 링크로 돌아왔는데 실패한 경우(#error=…): 사람이 읽을 이유
     linkError() {
       const q = new window.URLSearchParams(START.hash.replace(/^#/, '') + '&' + START.search.replace(/^\?/, ''));

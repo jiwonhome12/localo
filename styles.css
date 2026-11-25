@@ -546,3 +546,8 @@ button.cmp-h .chev{margin-left:auto;font-size:18px;line-height:1;color:var(--mut
 button.cmp-h small+.chev{margin-left:8px}
 .c-head p:empty{display:none}
 .c-head{justify-content:flex-end}
+
+/* 지역 지도 조작 */
+.crumb{min-height:44px;height:auto;padding:0 14px 0 0}
+.crumb button{min-width:56px;min-height:44px;padding:0 12px;color:var(--ink);font-weight:600}
+.back{min-height:44px;padding:0 12px;margin-left:-12px;font-size:14px}

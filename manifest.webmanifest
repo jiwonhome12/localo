@@ -1,0 +1,16 @@
+{
+  "id": "./app.html",
+  "name": "로컬로 - 반값여행",
+  "short_name": "로컬로",
+  "description": "반값여행 지역과 장소를 찾고 여행 경비와 환급액을 계산합니다.",
+  "start_url": "./app.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "lang": "ko",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

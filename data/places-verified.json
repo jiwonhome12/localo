@@ -1,0 +1,47 @@
+[
+ {
+  "id": "geochang-suseungdae",
+  "region_id": "geochang",
+  "category": "spot",
+  "name": "수승대관광지",
+  "address": "경상남도 거창군 위천면 은하리길 2",
+  "source_url": "https://access.visitkorea.or.kr/ms/detail.do?cotId=9a34191d-1068-444c-b0d6-be2e24294a21",
+  "price": null,
+  "price_text": "가격 확인 필요",
+  "access_text": "경상남도 거창군 위천면 은하리길 2",
+  "merchant": "미확인",
+  "capacity": 0,
+  "sample": false,
+  "verified_at": "2026-11-25"
+ },
+ {
+  "id": "geochang-healingland",
+  "region_id": "geochang",
+  "category": "spot",
+  "name": "거창 항노화힐링랜드",
+  "address": "경상남도 거창군 가조면 의상봉길 834",
+  "source_url": "https://access.visitkorea.or.kr/ms/detail.do?cotId=7ce980ac-c6fd-46d5-b57a-d05e043f0d25",
+  "price": null,
+  "price_text": "가격 확인 필요",
+  "access_text": "경상남도 거창군 가조면 의상봉길 834",
+  "merchant": "미확인",
+  "capacity": 0,
+  "sample": false,
+  "verified_at": "2026-11-25"
+ },
+ {
+  "id": "geochang-healingland-stay",
+  "region_id": "geochang",
+  "category": "stay",
+  "name": "거창 항노화힐링랜드 숲속의 집",
+  "address": "경상남도 거창군 가조면 의상봉길 834",
+  "source_url": "https://healingland.foresttrip.go.kr/",
+  "price": null,
+  "price_text": "가격 확인 필요",
+  "access_text": "경상남도 거창군 가조면 의상봉길 834",
+  "merchant": "미확인",
+  "capacity": 0,
+  "sample": false,
+  "verified_at": "2026-11-25"
+ }
+]

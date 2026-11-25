@@ -26,15 +26,6 @@
   const RM = Object.fromEntries(R.map((r) => [r.id, r]));
   const PM = Object.fromEntries(PLACES.filter((p) => !p.sample).map((p) => [p.id, p]));
   const placesOf = (rid) => PLACES.filter((p) => !p.sample && p.region_id === rid);
-  // 거창군 반값여행 상품권 공식 사용처 목록에서 확인한 일부 식당 후보(2026-11-25).
-  const GEOCHANG_MERCHANTS = [
-    ['단골식당', '거창군 거창읍 중앙로 140'],
-    ['영남쌈밥', '거창군 거창읍 강변로8길 14'],
-    ['샤브향 거창점', '거창군 거창읍 송정1길 12-8 2층'],
-    ['해면식당', '거창군 거창읍 중앙로 122 덕유빌딩 104호'],
-    ['진미식당', '거창군 거창읍 중앙로 140 채소1-2,3호'],
-    ['포항분식', '거창군 거창읍 중앙로 140 상설 7-2호'],
-  ];
   $('checked').textContent = (REG[0].status_checked_at || '').split(' ')[0];
 
   // 본토가 화면 가로 가운데에 오도록 보기 영역을 좌우 대칭으로 넓힌다(동쪽 울릉도·독도 상자도 그대로 보이게)
@@ -186,7 +177,7 @@
     const r = RM[p.region_id], inCart = S.cart.some((c) => c.pid === p.id);
     const rows = p.sample
       ? `<dt>가격</dt><dd>${esc(p.price_text)}</dd><dt>접근성</dt><dd>${esc(p.access_text)}</dd>`
-      : `<dt>대표 메뉴</dt><dd>${esc(p.price_text)}</dd><dt>주소</dt><dd>${esc(p.address || p.access_text)}</dd>
+      : `<dt>${p.category === 'food' || p.category === 'cafe' ? '대표 메뉴' : '이용 요금'}</dt><dd>${esc(p.price_text)}</dd><dt>주소</dt><dd>${esc(p.address || p.access_text)}</dd>
 
          <dt>가맹점</dt><dd>${p.merchant === '예' ? '지역화폐 가맹점' : p.merchant === '아니오' ? '<b class="warn">가맹점 아님 · 환급 제외</b>' : '<span class="warn">확인 전</span>'}</dd>`;
     return `<div class="pop" data-p="${p.id}" role="dialog" aria-label="${esc(p.name)}">
@@ -194,30 +185,9 @@
       <div class="cat-l" style="color:${CAT[p.category].c}">${CAT[p.category].n} · ${r.name}</div>
       <h3>${esc(p.name)}</h3>
       <dl>${rows}</dl>
-      <div class="links">${!p.sample ? `<button type="button" class="btn3" data-kakao-search="${esc(p.id)}">카카오맵에서 장소 확인</button>` : ''}${safeUrl(p.source_url) ? `<a href="${safeUrl(p.source_url)}" target="_blank" rel="noopener">출처</a>` : ''}</div>
-      ${!p.sample ? '<div class="kakao-results" aria-live="polite"></div>' : ''}
-      <button class="btn${inCart ? ' added' : ''}" type="button" data-add="${p.id}">${inCart ? '담김 · 빼기' : '장바구니에 담기'}</button>
+      <div class="links">${!p.sample ? `<a class="btn3" href="${esc(p.kakao_url)}" target="_blank" rel="noopener noreferrer">카카오맵에서 장소 확인</a>` : ''}</div>
+      ${p.price == null ? '<div class="ex">가격 확인 후 이용해 주세요. 경비 계산에는 포함되지 않습니다.</div>' : `<button class="btn${inCart ? ' added' : ''}" type="button" data-add="${p.id}">${inCart ? '담김 · 빼기' : '장바구니에 담기'}</button>`}
       ${p.sample ? '<div class="ex">예시 장소 · 실제 위치가 아닙니다</div>' : p.approx ? '<div class="ex">지도 핀은 대략적인 위치입니다. 카카오 검색 결과의 주소를 확인해 주세요.</div>' : ''}</div>`;
-  }
-
-  async function searchKakao(id, button, official = false) {
-    const p = official ? GEOCHANG_MERCHANTS[Number(id)] : PM[id];
-    if (!p) return;
-    const box = button.closest(official ? '.official-place' : '.pop').querySelector('.kakao-results');
-    box.textContent = '카카오맵에서 검색 중…';
-    button.disabled = true;
-    try {
-      const query = official ? `거창군 ${p[0]}` : `${RM[p.region_id].name} ${p.name}`;
-      const response = await fetch(`/api/kakao?${new URLSearchParams({ query })}`, { cache: 'no-store' });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || '검색하지 못했습니다.');
-      box.innerHTML = data.documents.length ? '<small>카카오맵 검색 결과 · 주소를 확인하고 선택하세요</small>' + data.documents.map((item) => {
-        const url = /^https:\/\/place\.map\.kakao\.com\/\d+\/?$/.test(item.place_url) ? item.place_url : '';
-        return url ? `<p><a href="${esc(url)}" target="_blank" rel="noopener">${esc(item.place_name)}</a><br><small>${esc(item.road_address_name || item.address_name || '주소 정보 없음')}</small></p>` : '';
-      }).join('') : '검색 결과가 없습니다. 상호명과 지역을 확인해 주세요.';
-    } catch (error) {
-      box.textContent = '장소 검색을 사용할 수 없습니다. 서버 설정을 확인해 주세요.';
-    } finally { button.disabled = false; }
   }
 
   /* ───────── 지도 상단 ───────── */
@@ -275,7 +245,6 @@
         <div class="rc-main"><div class="rhead"><h2>${r.name}</h2><span class="pill ${r.status}">${STL[r.status]}</span>${alarmBtn(r)}</div>
         <div class="rsub">${r.sido}</div></div></div>
       ${regionInfo(r)}
-      ${r.id === 'geochang' && (S.cat === 'all' || S.cat === 'food') ? `<section class="official-places"><h3>거창 반값여행 공식 사용처</h3><p>공식 목록 중 일부 · 2026.11.25 확인<br>방문 전 영업 및 상품권 결제 가능 여부를 확인해 주세요.</p><a href="https://geochangtour.kr/uses" target="_blank" rel="noopener">전체 공식 사용처 보기 ↗</a>${GEOCHANG_MERCHANTS.map((p, i) => `<div class="official-place"><b>${esc(p[0])}</b><p>${esc(p[1])}</p><button type="button" class="btn3" data-official-kakao="${i}">카카오맵 위치 확인</button><div class="kakao-results" aria-live="polite"></div></div>`).join('')}</section>` : ''}
       <div class="tabs" role="tablist">${cats.map(([k, n]) => `<button type="button" class="tab" role="tab" data-cat="${k}" aria-selected="${S.cat === k}">${n}</button>`).join('')}</div>
       <div>${ps.length ? ps.map((p) => `<button type="button" class="pitem${S.pid === p.id ? ' on' : ''}" data-p="${p.id}"><span class="pic" style="background:${CAT[p.category].c}">${CAT[p.category].k}</span><span><span class="nm">${esc(p.name.replace(r.short + ' ', ''))}</span><span class="sub">${p.price_text} · ${p.access_text}</span></span></button>`).join('') : '<p class="empty">등록된 장소가 없습니다.</p>'}</div>`;
   }
@@ -999,8 +968,6 @@
     if (d.cat) { S.cat = d.cat; S.pid = null; renderTop(); renderLeft(); renderOverlay(); return record(); }
     if (d.p) { S.pid = d.p; if (mobile()) setSheet('peek'); renderLeft(); renderOverlay(); return record(); }
     if (t.hasAttribute('data-close')) { S.pid = null; renderLeft(); renderOverlay(); return record(); }
-    if (d.kakaoSearch) return searchKakao(d.kakaoSearch, t);
-    if (d.officialKakao !== undefined) return searchKakao(d.officialKakao, t, true);
     if (d.add) return toggleCart(d.add);
     if (d.rm) return toggleCart(d.rm);
     if (d.q) { const c = S.cart.find((c) => c.pid === d.q); c.qty = Math.max(1, c.qty + +d.d); renderStack(); return; }

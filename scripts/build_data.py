@@ -228,7 +228,12 @@ def main():
             need_spot.setdefault(rid, []).append(place)
         places.append(place)
 
-    kept = []  # 확인되지 않은 예시 장소는 화면 데이터에 포함하지 않는다
+    kept = load(DATA / 'places-verified.json')  # 공식 출처를 확인한 숙박·관광지
+    for place in kept:
+        if place.get('region_id') not in geo['regions'] or place.get('category') not in ('stay', 'spot'):
+            errors.append(f"검증 장소 {place.get('id')}: 지역 또는 업종 오류")
+            continue
+        need_spot.setdefault(place['region_id'], []).append(place)
     for rid, group in need_spot.items():
         taken = [(p['x'], p['y']) for p in places + kept if p['region_id'] == rid and 'x' in p]
         for place, (x, y) in zip(group, spread(geo['regions'][rid], len(group), taken)):
@@ -246,6 +251,19 @@ def main():
             a = 2 * math.pi * i / (len(group) - 1)
             place['x'], place['y'] = round(x + 0.9 * math.cos(a), 2), round(y + 0.9 * math.sin(a), 2)
 
+    kakao = load(DATA / 'kakao-verified.json')
+    verified = []
+    for place in places + kept:
+        match = kakao.get(place['id'])
+        if not match:
+            continue
+        place['lat'], place['lng'] = match['lat'], match['lng']
+        place['x'], place['y'] = to_xy(proj, match['lat'], match['lng'])
+        place['approx'] = False
+        place['address'] = match['address']
+        place['kakao_url'] = match['place_url']
+        verified.append(place)
+
     if len({p['id'] for p in places + kept}) != len(places) + len(kept):
         errors.append('장소 id가 겹칩니다')
     for w in warnings:
@@ -256,9 +274,9 @@ def main():
         sys.exit(f'검증 실패 {len(errors)}건 — 파일을 쓰지 않았습니다')
     write = lambda path, value: path.write_text(json.dumps(value, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
     write(DATA / 'regions.json', regions)
-    write(DATA / 'places.json', places + kept)
+    write(DATA / 'places.json', verified)
     approx = sum(1 for p in places if p['approx'])
-    print(f'regions.json {len(regions)}곳 · places.json 식당·카페 {len(places)}곳(위치 근사 {approx}곳)')
+    print(f'regions.json {len(regions)}곳 · 카카오 확인 장소 {len(verified)}곳')
 
 
 if __name__ == '__main__':

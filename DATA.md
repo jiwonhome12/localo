@@ -6,7 +6,9 @@
 | --- | --- | --- |
 | `localo.json` | 시트 '신청·환급' 25곳, '식당' 125곳. 열 이름과 원문 값을 그대로 보존 | `scripts/sync_sheet.py` |
 | `data/regions.json` | 지역 신청 상태, 신청 안내, 환급 규칙 | `scripts/build_data.py` |
-| `data/places.json` | 수집된 실제 식당·카페만 표시 | `scripts/build_data.py` |
+| `data/places.json` | 카카오 장소 검색에서 상호와 지역이 일치한 장소 | `scripts/build_data.py` |
+| `data/kakao-verified.json` | 확인된 카카오 장소 ID·주소·좌표 | `scripts/verify_kakao.py` |
+| `data/places-verified.json` | 공식 출처를 확인한 숙박·관광지 원본 | 직접 조사·수정 |
 | `data/geocode-cache.json` | 브이월드(국토교통부) 주소 검색으로 찾은 식당 좌표 | `scripts/geocode.py` |
 | `data/region-extras.json` | 관광주민증 혜택(★), 상·하반기 구분. 시트에 없는 시제품 값이라 확인 필요 | 직접 수정 |
 | `data/geo.json` | 통계청 행정구역 경계(지도) | — |
@@ -25,7 +27,7 @@
 
 ## 직접 실행
 
-장소 카드의 카카오맵 검색은 `.env`에 `KAKAO_REST_API_KEY`를 설정한 뒤 `python scripts/serve.py`로 실행해요. 결과는 실시간 표시만 하며 카카오 장소명·주소·좌표를 데이터 파일에 저장하지 않아요. 후보 주소를 직접 확인해야 합니다. 카카오 검색은 메뉴 가격이나 후기를 제공하지 않으므로 기존 가격의 신뢰도가 자동으로 검증되지는 않습니다.
+장소 카드에서 확인된 카카오맵 장소를 새 탭으로 열 수 있습니다. 동일 상호의 다른 업소일 가능성이 있으므로 주소를 확인해 주세요. 숙박·관광지는 출처에서 장소명과 주소를 확인했으며, 환급 인정 여부와 가격은 별도 확인이 필요합니다. 가격 미확인 장소는 경비 계산에 넣지 않습니다.
 
 ```sh
 pip install -r scripts/requirements.txt

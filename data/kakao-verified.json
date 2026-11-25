@@ -1,0 +1,562 @@
+{
+ "2baa7434185e0873": {
+  "name": "평창한우마을 면온점",
+  "address": "강원특별자치도 평창군 봉평면 진조길 57",
+  "lat": 37.5601845662407,
+  "lng": 128.346381479315,
+  "place_url": "https://place.map.kakao.com/8608007"
+ },
+ "e5369ab09c57005c": {
+  "name": "흔들바위",
+  "address": "강원특별자치도 평창군 봉평면 태기로 1",
+  "lat": 37.5943890400428,
+  "lng": 128.320086428844,
+  "place_url": "https://place.map.kakao.com/16104219"
+ },
+ "5439953ad79ed7bd": {
+  "name": "풀내음",
+  "address": "강원특별자치도 평창군 봉평면 메밀꽃길 13",
+  "lat": 37.6148583466937,
+  "lng": 128.371254585964,
+  "place_url": "https://place.map.kakao.com/9507866"
+ },
+ "dc012d9e4c56327e": {
+  "name": "토담막국수",
+  "address": "강원특별자치도 평창군 대화면 대화5길 4",
+  "lat": 37.5019737715196,
+  "lng": 128.453362007381,
+  "place_url": "https://place.map.kakao.com/10899866"
+ },
+ "35c5c26940ad2e9a": {
+  "name": "감자창고",
+  "address": "강원특별자치도 평창군 진부면 방아다리로 362",
+  "lat": 37.687860495905646,
+  "lng": 128.55868839559648,
+  "place_url": "https://place.map.kakao.com/1883445066"
+ },
+ "d12d0cf21ad5c45a": {
+  "name": "옥동양어장횟집",
+  "address": "강원특별자치도 영월군 김삿갓면 영월동로 1547",
+  "lat": 37.12178174808167,
+  "lng": 128.56111234279302,
+  "place_url": "https://place.map.kakao.com/27158569"
+ },
+ "a8a7396c8be7d946": {
+  "name": "영월동강한우",
+  "address": "강원특별자치도 영월군 영월읍 하송안길 65",
+  "lat": 37.1820474292751,
+  "lng": 128.466355596364,
+  "place_url": "https://place.map.kakao.com/13050142"
+ },
+ "ea6f2170722bba71": {
+  "name": "주천묵집",
+  "address": "강원특별자치도 영월군 주천면 송학주천로 1282-11",
+  "lat": 37.26059403779351,
+  "lng": 128.26121260809398,
+  "place_url": "https://place.map.kakao.com/8090370"
+ },
+ "7530568d383f3e63": {
+  "name": "청록다방",
+  "address": "강원특별자치도 영월군 영월읍 중앙로 58",
+  "lat": 37.1833747540236,
+  "lng": 128.470047704865,
+  "place_url": "https://place.map.kakao.com/9453277"
+ },
+ "5d3d10cd94b1a298": {
+  "name": "대흥정육식당",
+  "address": "강원특별자치도 횡성군 횡성읍 읍상서로 5-23",
+  "lat": 37.4896002455475,
+  "lng": 127.987113675465,
+  "place_url": "https://place.map.kakao.com/9779413"
+ },
+ "87087a4d134c1096": {
+  "name": "용둔막국수",
+  "address": "강원특별자치도 횡성군 우천면 경강로 2883",
+  "lat": 37.4878972182024,
+  "lng": 128.072108295417,
+  "place_url": "https://place.map.kakao.com/8023418"
+ },
+ "84cecec338ecdaba": {
+  "name": "광암막국수",
+  "address": "강원특별자치도 횡성군 우천면 경강로 2885",
+  "lat": 37.487908842919644,
+  "lng": 128.07231650338323,
+  "place_url": "https://place.map.kakao.com/8667158"
+ },
+ "895e031fffb3f790": {
+  "name": "고네미막국수",
+  "address": "강원특별자치도 횡성군 횡성읍 한우로 765-2",
+  "lat": 37.4940233307246,
+  "lng": 128.033750160031,
+  "place_url": "https://place.map.kakao.com/10158013"
+ },
+ "107c851b8abbe7fa": {
+  "name": "송화수산횟집",
+  "address": "강원특별자치도 화천군 하남면 용화산로 1139-43",
+  "lat": 38.0738116608204,
+  "lng": 127.709807664405,
+  "place_url": "https://place.map.kakao.com/17930603"
+ },
+ "21fb66241d6bdc2d": {
+  "name": "화천손만두",
+  "address": "강원특별자치도 화천군 화천읍 중앙로4길 12",
+  "lat": 38.104181531040155,
+  "lng": 127.70522622975021,
+  "place_url": "https://place.map.kakao.com/21342951"
+ },
+ "7fc1f0260fc66eae": {
+  "name": "웰빙오골계세상",
+  "address": "강원특별자치도 화천군 화천읍 가손이길 43",
+  "lat": 38.1006092479877,
+  "lng": 127.725535286618,
+  "place_url": "https://place.map.kakao.com/14631748"
+ },
+ "26a022cc883ef9a2": {
+  "name": "신천일막국수",
+  "address": "강원특별자치도 화천군 화천읍 중앙로 34-9",
+  "lat": 38.1031271608493,
+  "lng": 127.707377740753,
+  "place_url": "https://place.map.kakao.com/916660506"
+ },
+ "545fbc00fb991ad2": {
+  "name": "카우보이그릴",
+  "address": "충북 제천시 청풍면 학현소야로 415-24",
+  "lat": 37.013248997273465,
+  "lng": 128.22607094185256,
+  "place_url": "https://place.map.kakao.com/129205227"
+ },
+ "a3534282bdc6025e": {
+  "name": "약채락성현",
+  "address": "충북 제천시 청풍면 청풍호로54길 14-7",
+  "lat": 36.99961336366556,
+  "lng": 128.1667658200085,
+  "place_url": "https://place.map.kakao.com/1654001705"
+ },
+ "1ca4ca5155c3d8b7": {
+  "name": "꿀참나무",
+  "address": "충북 제천시 의림대로49길 13",
+  "lat": 37.178107577191,
+  "lng": 128.208475802661,
+  "place_url": "https://place.map.kakao.com/1632467786"
+ },
+ "5dd7e693afe53bae": {
+  "name": "열두달밥상",
+  "address": "충북 제천시 백운면 금봉로 161",
+  "lat": 37.1458917011811,
+  "lng": 128.038492200824,
+  "place_url": "https://place.map.kakao.com/25414666"
+ },
+ "27e5afd9810125f6": {
+  "name": "부성당",
+  "address": "충북 제천시 용두천로 47",
+  "lat": 37.1339840013438,
+  "lng": 128.207465283536,
+  "place_url": "https://place.map.kakao.com/1592460044"
+ },
+ "0812dbd9ea6b27c2": {
+  "name": "딴뚝통나무집식당",
+  "address": "충남 태안군 안면읍 조운막터길 23-22",
+  "lat": 36.5094370127013,
+  "lng": 126.350981405592,
+  "place_url": "https://place.map.kakao.com/12344439"
+ },
+ "ae786efc15486b81": {
+  "name": "신라국밥",
+  "address": "경북 안동시 서경지5길 45",
+  "lat": 36.55898593718884,
+  "lng": 128.71496833073743,
+  "place_url": "https://place.map.kakao.com/11120785"
+ },
+ "897bc85ae5fe7563": {
+  "name": "옥야식당",
+  "address": "경북 안동시 중앙시장2길 46",
+  "lat": 36.56383941785355,
+  "lng": 128.72348964282705,
+  "place_url": "https://place.map.kakao.com/9290541"
+ },
+ "cb4de8299fd82a74": {
+  "name": "하회식당",
+  "address": "경북 안동시 풍천면 전서로 214-6",
+  "lat": 36.54917606643763,
+  "lng": 128.52762760769392,
+  "place_url": "https://place.map.kakao.com/15520978"
+ },
+ "6652e7299542a8c1": {
+  "name": "유아히어카페 안동점",
+  "address": "경북 안동시 강남로 277",
+  "lat": 36.5536261059025,
+  "lng": 128.73182975938,
+  "place_url": "https://place.map.kakao.com/1919997133"
+ },
+ "da39e0b77447e6bf": {
+  "name": "편대장영화식당 영천본점",
+  "address": "경북 영천시 강변로 50-15",
+  "lat": 35.96041515194889,
+  "lng": 128.92804764891983,
+  "place_url": "https://place.map.kakao.com/8117317"
+ },
+ "501e19f52697e4a8": {
+  "name": "카페온당",
+  "address": "경북 영천시 임고면 포은로 452",
+  "lat": 36.016918474228525,
+  "lng": 128.9745806021621,
+  "place_url": "https://place.map.kakao.com/1282047321"
+ },
+ "a0a0727ef5be862b": {
+  "name": "우리식당",
+  "address": "충남 서천군 장항읍 장서로29번길 42",
+  "lat": 36.010679532681,
+  "lng": 126.69596123306,
+  "place_url": "https://place.map.kakao.com/9894103"
+ },
+ "56edc183c62b567c": {
+  "name": "서산회관",
+  "address": "충남 서천군 서면 서인로 320",
+  "lat": 36.14722663842123,
+  "lng": 126.50605660953372,
+  "place_url": "https://place.map.kakao.com/8365828"
+ },
+ "9747c0d86670fef2": {
+  "name": "금강식당",
+  "address": "충남 서천군 화양면 옥포길8번길 5",
+  "lat": 36.0379800363958,
+  "lng": 126.782398017355,
+  "place_url": "https://place.map.kakao.com/10218611"
+ },
+ "250d91fb9506579e": {
+  "name": "금희다방",
+  "address": "충남 서천군 장항읍 장서로19번길 29",
+  "lat": 36.0095741161169,
+  "lng": 126.696471283506,
+  "place_url": "https://place.map.kakao.com/12666045"
+ },
+ "f7a1fe132c08a7fd": {
+  "name": "청자골종가집",
+  "address": "전남광주통합특별시 강진군 군동면 종합운동장길 106-11",
+  "lat": 34.6470645714521,
+  "lng": 126.783914394369,
+  "place_url": "https://place.map.kakao.com/9455368"
+ },
+ "e18ff0b740db7f68": {
+  "name": "설성식당",
+  "address": "전남광주통합특별시 강진군 병영면 병영성로 92",
+  "lat": 34.7128182286606,
+  "lng": 126.816828631368,
+  "place_url": "https://place.map.kakao.com/7943988"
+ },
+ "46e193d8a2177109": {
+  "name": "풍성한집",
+  "address": "전남광주통합특별시 영광군 법성면 법성포로3길 60",
+  "lat": 35.35912525211185,
+  "lng": 126.44561109361688,
+  "place_url": "https://place.map.kakao.com/9521619"
+ },
+ "e63fd210931a7753": {
+  "name": "일번지식당",
+  "address": "전남광주통합특별시 영광군 법성면 굴비로 37",
+  "lat": 35.35965657045306,
+  "lng": 126.44669120901195,
+  "place_url": "https://place.map.kakao.com/21217435"
+ },
+ "982cd354855d1697": {
+  "name": "카페보리",
+  "address": "전남광주통합특별시 영광군 백수읍 해안로 787",
+  "lat": 35.3403831391238,
+  "lng": 126.386442106877,
+  "place_url": "https://place.map.kakao.com/2134034914"
+ },
+ "a0d29fe89b56a02c": {
+  "name": "독천식당",
+  "address": "전남광주통합특별시 영암군 학산면 독천로 162-2",
+  "lat": 34.724745435172444,
+  "lng": 126.56710722452331,
+  "place_url": "https://place.map.kakao.com/7833148"
+ },
+ "a29c41a9fa4b318b": {
+  "name": "금동숯불구이",
+  "address": "전남광주통합특별시 영암군 신북면 고분로 1014",
+  "lat": 34.934491956048525,
+  "lng": 126.67280143266468,
+  "place_url": "https://place.map.kakao.com/11780132"
+ },
+ "ceb45379b214915a": {
+  "name": "명품전복 궁",
+  "address": "전남광주통합특별시 완도군 완도읍 개포로 34-1",
+  "lat": 34.31610367558755,
+  "lng": 126.74824774872253,
+  "place_url": "https://place.map.kakao.com/2021579098"
+ },
+ "fdbf7df1e4ef94cf": {
+  "name": "대성회식당",
+  "address": "전남광주통합특별시 완도군 완도읍 해변공원로 59",
+  "lat": 34.31893953381149,
+  "lng": 126.7494681167755,
+  "place_url": "https://place.map.kakao.com/8929354"
+ },
+ "c5d4d7603fd62712": {
+  "name": "상화식당",
+  "address": "전남광주통합특별시 완도군 완도읍 해변공원로 33",
+  "lat": 34.317125512605976,
+  "lng": 126.75156280687756,
+  "place_url": "https://place.map.kakao.com/10517537"
+ },
+ "6f45742ea116613b": {
+  "name": "해궁횟집",
+  "address": "전남광주통합특별시 완도군 완도읍 장보고대로 340",
+  "lat": 34.31567106158874,
+  "lng": 126.76181893891942,
+  "place_url": "https://place.map.kakao.com/1599153833"
+ },
+ "cf67a308174f2ccf": {
+  "name": "카페더비치",
+  "address": "전남광주통합특별시 완도군 완도읍 해변공원로 59",
+  "lat": 34.318904351812,
+  "lng": 126.749456269782,
+  "place_url": "https://place.map.kakao.com/1888379887"
+ },
+ "af88ed5500cfc96a": {
+  "name": "바다하우스",
+  "address": "전남광주통합특별시 장흥군 안양면 수문용곡로 139",
+  "lat": 34.6325622341999,
+  "lng": 127.03111205356,
+  "place_url": "https://place.map.kakao.com/8320190"
+ },
+ "94a4c3d1cad55eaf": {
+  "name": "끄니걱정",
+  "address": "전남광주통합특별시 장흥군 장흥읍 토요시장2길 3-12",
+  "lat": 34.67480089149743,
+  "lng": 126.90248764881854,
+  "place_url": "https://place.map.kakao.com/11467825"
+ },
+ "9631584926838c42": {
+  "name": "우리기사식당",
+  "address": "전남광주통합특별시 해남군 산이면 관광레저로 1707",
+  "lat": 34.6936269481457,
+  "lng": 126.359591717213,
+  "place_url": "https://place.map.kakao.com/1293630098"
+ },
+ "a0c51f04d6a3ba43": {
+  "name": "본가",
+  "address": "전북특별자치도 고창군 고창읍 석정2로 160",
+  "lat": 35.43068497732146,
+  "lng": 126.73907184863803,
+  "place_url": "https://place.map.kakao.com/18106870"
+ },
+ "7d4796bb6ca51091": {
+  "name": "신덕식당",
+  "address": "전북특별자치도 고창군 아산면 선운사로 8",
+  "lat": 35.50809255090586,
+  "lng": 126.59973779998607,
+  "place_url": "https://place.map.kakao.com/8402093"
+ },
+ "32aaf4d3229e722b": {
+  "name": "우리풍천장어",
+  "address": "전북특별자치도 고창군 고창읍 월암수월길 104-14",
+  "lat": 35.43136011548295,
+  "lng": 126.72369858231852,
+  "place_url": "https://place.map.kakao.com/11724622"
+ },
+ "78eeeef3cc6872d5": {
+  "name": "과역기사님식당",
+  "address": "전남광주통합특별시 고흥군 과역면 고흥로 2959-3",
+  "lat": 34.6771719126064,
+  "lng": 127.360995493252,
+  "place_url": "https://place.map.kakao.com/15938912"
+ },
+ "3bc02925b8399a9a": {
+  "name": "평화국밥",
+  "address": "전남광주통합특별시 고흥군 과역면 과역로 951",
+  "lat": 34.68400714241321,
+  "lng": 127.369211684387,
+  "place_url": "https://place.map.kakao.com/1903026102"
+ },
+ "2ea86d49ab3e0915": {
+  "name": "분청마루",
+  "address": "전남광주통합특별시 고흥군 두원면 분청문화박물관길 77",
+  "lat": 34.628512110884934,
+  "lng": 127.32127288983241,
+  "place_url": "https://place.map.kakao.com/1830904078"
+ },
+ "28ba1cc4b6293389": {
+  "name": "중앙식당",
+  "address": "전남광주통합특별시 고흥군 도화면 당오천변1길 39",
+  "lat": 34.5105608382404,
+  "lng": 127.321028622694,
+  "place_url": "https://place.map.kakao.com/11284156"
+ },
+ "ca21cd1497d94320": {
+  "name": "카페마레",
+  "address": "전남광주통합특별시 고흥군 영남면 우천우두길 24-75",
+  "lat": 34.62875575288709,
+  "lng": 127.49452251947646,
+  "place_url": "https://place.map.kakao.com/1264484493"
+ },
+ "40424cc5a2554c89": {
+  "name": "삼산이수",
+  "address": "경남 거창군 거창읍 내학길 35-4",
+  "lat": 35.739110491803,
+  "lng": 127.924778831758,
+  "place_url": "https://place.map.kakao.com/12658887"
+ },
+ "e4ca0a39879b63c4": {
+  "name": "대전식당",
+  "address": "경남 거창군 거창읍 주곡로 504-20",
+  "lat": 35.738332205641605,
+  "lng": 127.92437741181256,
+  "place_url": "https://place.map.kakao.com/7828740"
+ },
+ "6d20d369121b8a0d": {
+  "name": "해플스팜사이더리",
+  "address": "경남 거창군 거창읍 갈지2길 192-8",
+  "lat": 35.7152905775042,
+  "lng": 127.899360514061,
+  "place_url": "https://place.map.kakao.com/153567540"
+ },
+ "3a1f535e770b3d67": {
+  "name": "군령포 하모자연산횟집",
+  "address": "경남 고성군 삼산면 두포5길 426",
+  "lat": 34.917220247013,
+  "lng": 128.297291149619,
+  "place_url": "https://place.map.kakao.com/18029271"
+ },
+ "6668389be3c6177d": {
+  "name": "해명새우",
+  "address": "경남 고성군 삼산면 해명길 87-26",
+  "lat": 34.94410162515406,
+  "lng": 128.2438997956124,
+  "place_url": "https://place.map.kakao.com/1998870521"
+ },
+ "2521f65af37d4ec6": {
+  "name": "카페도어스",
+  "address": "경남 고성군 고성읍 신월로 166",
+  "lat": 34.9447776603007,
+  "lng": 128.334008816871,
+  "place_url": "https://place.map.kakao.com/581805089"
+ },
+ "df2ea3c3f2376d4f": {
+  "name": "해바라기맛집",
+  "address": "경남 남해군 남면 남면로679번길 17-19",
+  "lat": 34.72720853328024,
+  "lng": 127.89430219179904,
+  "place_url": "https://place.map.kakao.com/2082395641"
+ },
+ "df47c9b7046a2365": {
+  "name": "우리식당",
+  "address": "경남 남해군 삼동면 동부대로1876번길 7",
+  "lat": 34.83163986572452,
+  "lng": 128.0007107162976,
+  "place_url": "https://place.map.kakao.com/8525552"
+ },
+ "527568bef03b93ce": {
+  "name": "부산횟집",
+  "address": "경남 남해군 서면 남서대로 1727-15",
+  "lat": 34.81051072105076,
+  "lng": 127.83106698039467,
+  "place_url": "https://place.map.kakao.com/9791405"
+ },
+ "5e8ccc8c168224e7": {
+  "name": "카페톨",
+  "address": "경남 남해군 남면 남면로679번길 17-27",
+  "lat": 34.72681693073353,
+  "lng": 127.89497050363647,
+  "place_url": "https://place.map.kakao.com/1051163190"
+ },
+ "9d0596661baa3568": {
+  "name": "산삼장어구이",
+  "address": "경남 밀양시 영남루2길 7",
+  "lat": 35.49330749613868,
+  "lng": 128.75451545769562,
+  "place_url": "https://place.map.kakao.com/1755234685"
+ },
+ "8be520b66c10c4ab": {
+  "name": "설봉돼지국밥",
+  "address": "경남 밀양시 노상하3길 9",
+  "lat": 35.49556096426278,
+  "lng": 128.7494525258688,
+  "place_url": "https://place.map.kakao.com/9881953"
+ },
+ "a0da329fbd75f820": {
+  "name": "산청약초식당",
+  "address": "경남 산청군 금서면 친환경로 2621",
+  "lat": 35.41843966122206,
+  "lng": 127.87236403858256,
+  "place_url": "https://place.map.kakao.com/21730216"
+ },
+ "0e2c5da3b12b40b4": {
+  "name": "동백식당",
+  "address": "경남 하동군 화개면 화개로 11-1",
+  "lat": 35.189714193712064,
+  "lng": 127.62301062925296,
+  "place_url": "https://place.map.kakao.com/7842726"
+ },
+ "cdae3546c0d0c16e": {
+  "name": "혜성식당",
+  "address": "경남 하동군 화개면 화개로 48",
+  "lat": 35.192474728840125,
+  "lng": 127.62463586293627,
+  "place_url": "https://place.map.kakao.com/10987258"
+ },
+ "51089876101a6bf8": {
+  "name": "청운식당",
+  "address": "경남 하동군 화개면 쌍계사길 6",
+  "lat": 35.2298927362865,
+  "lng": 127.644233998954,
+  "place_url": "https://place.map.kakao.com/16348935"
+ },
+ "ea462dc6857b7d98": {
+  "name": "옛날금호식당",
+  "address": "경남 함양군 안의면 광풍로 107",
+  "lat": 35.6266920542448,
+  "lng": 127.81026908892,
+  "place_url": "https://place.map.kakao.com/21489789"
+ },
+ "958b8388efde3bad": {
+  "name": "대성식당",
+  "address": "경남 함양군 함양읍 용평6길 4",
+  "lat": 35.5170529359906,
+  "lng": 127.7261742709179,
+  "place_url": "https://place.map.kakao.com/22733727"
+ },
+ "6c1ae125ee8324e8": {
+  "name": "늘봄가든",
+  "address": "경남 함양군 함양읍 필봉산길 65-1",
+  "lat": 35.52417012935749,
+  "lng": 127.72411390288909,
+  "place_url": "https://place.map.kakao.com/11485997"
+ },
+ "8dccfd912b94b859": {
+  "name": "안의원조갈비집",
+  "address": "경남 함양군 안의면 광풍로 127-2",
+  "lat": 35.6281515391725,
+  "lng": 127.811423039837,
+  "place_url": "https://place.map.kakao.com/7988665"
+ },
+ "5bbe196738fa6f9d": {
+  "name": "삼가식육식당",
+  "address": "경남 합천군 삼가면 일부5길 14",
+  "lat": 35.4132601417876,
+  "lng": 128.123529662352,
+  "place_url": "https://place.map.kakao.com/9115235"
+ },
+ "242e30ab343207e0": {
+  "name": "적사부",
+  "address": "경남 합천군 합천읍 동서로 74",
+  "lat": 35.5671051472722,
+  "lng": 128.16033054689,
+  "place_url": "https://place.map.kakao.com/24500883"
+ },
+ "geochang-suseungdae": {
+  "name": "수승대관광지",
+  "address": "경남 거창군 위천면 강천리 790",
+  "lat": 35.76000685335183,
+  "lng": 127.8321850530472,
+  "place_url": "https://place.map.kakao.com/7971620"
+ },
+ "geochang-healingland": {
+  "name": "거창항노화힐링랜드",
+  "address": "경남 거창군 가조면 의상봉길 834",
+  "lat": 35.73669199057339,
+  "lng": 128.0408941152996,
+  "place_url": "https://place.map.kakao.com/35403477"
+ }
+}

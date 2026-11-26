@@ -25,7 +25,9 @@
   const R = REG.map((r) => ({ ...r, ...GEO.regions[r.id], short: r.name.slice(0, -1), name: r.name, sido: r.sido }));
   const RM = Object.fromEntries(R.map((r) => [r.id, r]));
   const PM = Object.fromEntries(PLACES.filter((p) => !p.sample).map((p) => [p.id, p]));
-  const placesOf = (rid) => PLACES.filter((p) => !p.sample && p.region_id === rid);
+  const placesByRegion = {};
+  Object.values(PM).forEach((p) => { (placesByRegion[p.region_id] ||= []).push(p); });
+  const placesOf = (rid) => placesByRegion[rid] || [];
   $('checked').textContent = (REG[0].status_checked_at || '').split(' ')[0];
 
   // 본토가 화면 가로 가운데에 오도록 보기 영역을 좌우 대칭으로 넓힌다(동쪽 울릉도·독도 상자도 그대로 보이게)
@@ -77,18 +79,22 @@
   svg.addEventListener('click', (e) => { const t = e.target.closest('.target'); if (t) openRegion(t.dataset.r); });
 
   /* ───────── 좌표 변환 ───────── */
-  function proj(x, y) {
-    const w = wrap.clientWidth, h = wrap.clientHeight, s = Math.min(w / vb[2], h / vb[3]);
-    return [(w - vb[2] * s) / 2 + (x - vb[0]) * s, (h - vb[3] * s) / 2 + (y - vb[1]) * s, s];
+  // 한 프레임의 크기를 한 번만 읽는다. 핀 위치 쓰기 사이에 크기를 읽으면 매번 강제 레이아웃이 발생한다.
+  function projection(box, w, h) {
+    const s = Math.min(w / box[2], h / box[3]);
+    const ox = (w - box[2] * s) / 2 - box[0] * s, oy = (h - box[3] * s) / 2 - box[1] * s;
+    return (x, y) => [ox + x * s, oy + y * s];
   }
   function setVB(v) { vb = v; svg.setAttribute('viewBox', v.join(' ')); placeOverlay(); }
-  let anim = null;
-  function animateVB(to, ms = 650, done) {
-    cancelAnimationFrame(anim);
+  let anim = null, zoomSize = null;
+  function stopZoom() { cancelAnimationFrame(anim); anim = null; zoomSize = null; }
+  function animateVB(to, ms = 650) {
+    stopZoom(); stopIntro();
     const from = vb.slice(), t0 = performance.now();
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { setVB(to); done && done(); return; }
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { setVB(to); return; }
+    zoomSize = [wrap.clientWidth, wrap.clientHeight];
     const step = (t) => { let k = Math.min(1, (t - t0) / ms); k = 1 - Math.pow(1 - k, 3);
-      setVB(from.map((f, i) => f + (to[i] - f) * k)); if (k < 1) anim = requestAnimationFrame(step); else done && done(); };
+      setVB(from.map((f, i) => f + (to[i] - f) * k)); if (k < 1) anim = requestAnimationFrame(step); else { anim = null; zoomSize = null; } };
     anim = requestAnimationFrame(step);
   }
   // 지역 경계 상자에 맞춰 확대 (화면 비율 유지)
@@ -130,12 +136,11 @@
   }
   // 라벨끼리 겹치지 않게 밀어내고, 많이 움직인 라벨은 지시선을 그린다
   function layoutPins() {
-    const vb0 = vb; vb = VB0; // 전국 화면 기준으로 계산
+    const W = wrap.clientWidth, H = wrap.clientHeight, proj = projection(VB0, W, H);
     const items = [...overlay.querySelectorAll('.pin')].map((b) => {
       const r = RM[b.dataset.r]; const [x, y] = proj(r.cx, r.cy);
       return { id: r.id, ax: x, ay: y, x, y: y - 16, w: b.offsetWidth + 4, h: b.offsetHeight + 4 };
     });
-    const W = wrap.clientWidth, H = wrap.clientHeight;
     for (let it = 0; it < 140; it++) {
       for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) {
         const a = items[i], b = items[j];
@@ -149,9 +154,12 @@
         a.x = Math.max(a.w / 2 + 6, Math.min(W - a.w / 2 - 6, a.x)); a.y = Math.max(60, Math.min(H - 40, a.y)); });
     }
     pinOffsets = Object.fromEntries(items.map((a) => [a.id, [a.x - a.ax, a.y - a.ay]]));
-    vb = vb0;
   }
   function placeOverlay() {
+    // DOM 읽기를 위치 쓰기보다 먼저 끝낸다(지역명 약 250개 + 장소 마커 약 180개).
+    const w = wrap.clientWidth, h = wrap.clientHeight, proj = projection(vb, w, h);
+    const pop = overlay.querySelector('.pop');
+    const showPop = pop && !mobile(), pw = showPop ? pop.offsetWidth : 0, ph = showPop ? pop.offsetHeight : 0;
     const L = overlay.querySelector('#leaders'); let lines = '';
     overlay.querySelectorAll('.pdot').forEach((e) => { const r = RM[e.dataset.r]; const [x, y] = proj(r.cx, r.cy); e.style.left = x + 'px'; e.style.top = y + 'px'; });
     overlay.querySelectorAll('.pin').forEach((e) => {
@@ -159,13 +167,15 @@
       e.style.left = x + o[0] + 'px'; e.style.top = y + o[1] + 'px';
       if (Math.hypot(o[0], o[1]) > 20) lines += `<line x1="${x}" y1="${y}" x2="${x + o[0]}" y2="${y + o[1]}"/>`;
     });
-    if (L) L.innerHTML = lines;
-    overlay.querySelectorAll('.nlabel,.rlabel').forEach((e) => { const [x, y] = proj(+e.dataset.x, +e.dataset.y); e.style.left = x + 'px'; e.style.top = y + 'px'; });
+    if (L && L.innerHTML !== lines) L.innerHTML = lines;
+    overlay.querySelectorAll('.nlabel,.rlabel').forEach((e) => {
+      const [x, y] = proj(+e.dataset.x, +e.dataset.y), outside = x < -80 || x > w + 80 || y < -30 || y > h + 30;
+      if (e.hidden !== outside) e.hidden = outside;
+      if (!outside) { e.style.left = x + 'px'; e.style.top = y + 'px'; }
+    });
     overlay.querySelectorAll('.marker').forEach((e) => { const p = PM[e.dataset.p]; const [x, y] = proj(p.x, p.y); e.style.left = x + 'px'; e.style.top = y + 'px'; });
-    const pop = overlay.querySelector('.pop');
-    if (pop && !mobile()) {
+    if (showPop) {
       const p = PM[pop.dataset.p]; const [x, y] = proj(p.x, p.y);
-      const w = wrap.clientWidth, h = wrap.clientHeight, pw = pop.offsetWidth, ph = pop.offsetHeight;
       let L2 = x + 24, T = y - ph / 2;
       if (L2 + pw > w - 12) L2 = x - pw - 24;
       if (L2 < 12) { L2 = Math.max(12, Math.min(w - pw - 12, x - pw / 2)); T = y + 12 + ph < h ? y + 12 : y - ph - 44; }
@@ -466,7 +476,7 @@
     openPanel(null);
     if (rids.size === 1) { S.view = 'region'; S.rid = ps[0].region_id; S.cat = 'all'; S.pid = null; renderAll(); }
     else { S.view = 'region'; S.rid = ps[0].region_id; renderAll(); }
-    animateVB(fitBox([Math.min(...xs) - 4, Math.min(...ys) - 4, Math.max(...xs) + 4, Math.max(...ys) + 4], 0.25), 700, placeOverlay);
+    animateVB(fitBox([Math.min(...xs) - 4, Math.min(...ys) - 4, Math.max(...xs) + 4, Math.max(...ys) + 4], 0.25), 700);
   }
 
   /* ───────── 마이: 로그인(시제품) · 알림 받는 지역 · 지난 여행 ───────── */
@@ -790,12 +800,12 @@
   function openRegion(id) {
     S.view = 'region'; S.rid = id; S.cat = 'all'; S.pid = null;
     if (mobile()) setSheet('peek');
-    renderAll(); animateVB(fitBox(RM[id].bbox), 700, placeOverlay);
+    renderAll(); animateVB(fitBox(RM[id].bbox), 700);
     $('left').scrollTop = 0;
     record();
   }
   // 전국 지도(메인)로 돌아올 때마다 ㄹㅋ 마크가 한반도로 바뀌는 인트로를 다시 보여 준다
-  function goHome() { cancelAnimationFrame(anim); S.view = 'all'; S.rid = null; S.pid = null; vb = VB0.slice(); svg.setAttribute('viewBox', vb.join(' ')); renderAll(); playIntro(); record(); }
+  function goHome() { stopZoom(); S.view = 'all'; S.rid = null; S.pid = null; vb = VB0.slice(); svg.setAttribute('viewBox', vb.join(' ')); renderAll(); playIntro(); record(); }
 
   /* ───────── 화면 기록: 로고·뒤로가기 제스처로 직전 화면 복원 ───────── */
   let restoring = false;
@@ -816,7 +826,7 @@
       const moved = S.view !== 'region' || S.rid !== s.rid;
       S.view = 'region'; S.rid = s.rid; S.cat = s.cat; S.pid = PM[s.pid] ? s.pid : null;
       renderAll();
-      if (moved) { animateVB(fitBox(RM[s.rid].bbox), 700, placeOverlay); $('left').scrollTop = 0; }
+      if (moved) { animateVB(fitBox(RM[s.rid].bbox), 700); $('left').scrollTop = 0; }
     }
     restoring = false;
   }
@@ -1022,7 +1032,13 @@
   document.addEventListener('keydown', (e) => { if (e.target.id === 'cq' && e.key === 'Enter') { const h = R.filter(matchQ(cq.trim())); if (cq.trim() && h.length) pickRegion((h.find((r) => norm(r.name) === norm(cq) || norm(r.short) === norm(cq)) || h[0]).id); } });
   document.addEventListener('change', (e) => { if (e.target.id === 'pFile' && e.target.files.length) addPhotos(e.target.files); });
   ['d1', 'd2'].forEach((id) => $(id).addEventListener('change', () => { renderStack(); renderRoute(); }));
-  new ResizeObserver(() => { if (S.view === 'all') { vb = VB0.slice(); svg.setAttribute('viewBox', vb.join(' ')); layoutPins(); } else setVB(fitBox(RM[S.rid].bbox)); placeOverlay(); }).observe(wrap);
+  new ResizeObserver(() => {
+    // 지역 선택으로 시트가 나타날 때의 크기는 이미 줌에 반영됐다. 중간에 목적지로 순간 이동하지 않는다.
+    if (anim !== null && zoomSize[0] === wrap.clientWidth && zoomSize[1] === wrap.clientHeight) return;
+    stopZoom();
+    if (S.view === 'all') { layoutPins(); setVB(VB0.slice()); }
+    else setVB(fitBox(RM[S.rid].bbox));
+  }).observe(wrap);
 
   /* ───────── 인트로: 가운데 둥근 ㄹㅋ 마크 → 한반도 윤곽으로 부풀어 변형 ───────── */
   const morph = $('morph');
@@ -1054,10 +1070,19 @@
       poly([[214, 28], [402, 28], [402, 502], [340, 502], [340, 282], [228, 282], [228, 220], [340, 220], [340, 90], [214, 90]]),
     ];
   }
-  let introRaf = null;
+  let introRaf = null, introMorphTimer = null, introPinsTimer = null;
+  function stopIntro() {
+    cancelAnimationFrame(introRaf); introRaf = null;
+    clearTimeout(introMorphTimer); clearTimeout(introPinsTimer);
+    introMorphTimer = introPinsTimer = null;
+    morph.setAttribute('d', ''); morph.setAttribute('transform', '');
+    morph.style.transition = ''; morph.style.opacity = 0;
+    layers.forEach((l) => { l.style.transition = 'none'; l.style.opacity = l === deco && S.view !== 'all' ? 0 : 1; });
+    wrap.classList.remove('intro');
+  }
   function playIntro() {
+    stopZoom(); stopIntro();
     if (S.view !== 'all') { S.view = 'all'; S.rid = null; S.pid = null; vb = VB0.slice(); svg.setAttribute('viewBox', vb.join(' ')); renderAll(); }
-    cancelAnimationFrame(introRaf);
     wrap.classList.remove('intro'); void wrap.offsetWidth; wrap.classList.add('intro');
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduce || !window.flubber) { morph.setAttribute('d', ''); layers.forEach((l) => (l.style.opacity = 1)); wrap.classList.remove('intro'); return; }
@@ -1087,8 +1112,9 @@
       } else { // 4) 실제 경계 지도로 교체
         layers.forEach((l) => { l.style.transition = ''; l.style.opacity = 1; });
         morph.style.transition = 'opacity .6s'; morph.style.opacity = 0;
-        setTimeout(() => { morph.setAttribute('d', ''); morph.style.transition = ''; }, 620);
-        setTimeout(() => wrap.classList.remove('intro'), 1400); // 핀 등장 애니메이션 끝나면 해제(다시 그릴 때 깜빡임 방지)
+        introRaf = null;
+        introMorphTimer = setTimeout(() => { morph.setAttribute('d', ''); morph.style.transition = ''; introMorphTimer = null; }, 620);
+        introPinsTimer = setTimeout(() => { wrap.classList.remove('intro'); introPinsTimer = null; }, 1400); // 핀 등장 애니메이션 끝나면 해제(다시 그릴 때 깜빡임 방지)
         return;
       }
       introRaf = requestAnimationFrame(step);
